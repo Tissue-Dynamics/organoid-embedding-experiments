@@ -1,15 +1,11 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
 .Python
-venv/
 .venv/
-env/
-ENV/
+venv/
 
-# Environment variables
+# Environment
 .env
 .env.local
 
@@ -17,36 +13,24 @@ ENV/
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
 
 # OS
 .DS_Store
-Thumbs.db
 
-# Results and data
-results/data/*.joblib
-results/data/*.csv
-results/data/*.json
+# Data and logs
 *.log
+*.csv
+*.joblib
+*.json
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
-
-# Package management
-uv.lock
-
-# Temporary files
+# Temporary
 *.tmp
-*.temp
 *.bak
 
-# Large data files
-data/raw/
-data/processed/
+# UV lock file
+uv.lock
 
 # Experiment outputs
 experiments/outputs/
 experiments/results/
-experiments/experiments/
+EOF < /dev/null
