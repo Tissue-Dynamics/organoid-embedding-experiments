@@ -12,6 +12,7 @@ import joblib
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
+import umap
 from sklearn.preprocessing import StandardScaler
 import os
 from dotenv import load_dotenv
@@ -426,37 +427,73 @@ class HierarchicalClusterOxygenVisualization:
             kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             drug_labels = kmeans.fit_predict(embedding_scaled)
             
-            # t-SNE for visualization (instead of PCA)
+            # t-SNE for visualization
             print(f"    Computing t-SNE for {method_name}...")
             tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(embedding)//4))
-            embedding_2d = tsne.fit_transform(embedding_scaled)
+            tsne_embedding = tsne.fit_transform(embedding_scaled)
             
-            # Create figure
-            fig = plt.figure(figsize=(24, 8 * n_clusters))
+            # UMAP for visualization
+            print(f"    Computing UMAP for {method_name}...")
+            umap_reducer = umap.UMAP(n_components=2, random_state=42, 
+                                     n_neighbors=min(15, len(embedding)//2),
+                                     min_dist=0.1)
+            umap_embedding = umap_reducer.fit_transform(embedding_scaled)
             
-            # Top plot: Drug-level t-SNE
-            ax_tsne = plt.subplot(n_clusters + 1, 1, 1)
+            # Create figure with new layout
+            # Top row: t-SNE and UMAP side by side
+            # Bottom rows: Full-width oxygen curve plots (one cluster per row)
+            fig = plt.figure(figsize=(24, 6 + 5 * n_clusters))
             
-            scatter = ax_tsne.scatter(embedding_2d[:, 0], embedding_2d[:, 1], 
+            # Create grid specification
+            import matplotlib.gridspec as gridspec
+            gs = gridspec.GridSpec(n_clusters + 1, 2, figure=fig, 
+                                  height_ratios=[1] + [1]*n_clusters,
+                                  hspace=0.3, wspace=0.2)
+            
+            # Top left: t-SNE plot
+            ax_tsne = fig.add_subplot(gs[0, 0])
+            
+            scatter = ax_tsne.scatter(tsne_embedding[:, 0], tsne_embedding[:, 1], 
                                      c=drug_labels, cmap='tab10', s=120, alpha=0.8, 
                                      edgecolors='black', linewidth=1)
             
             # Label drugs (only a subset to avoid overcrowding)
             for i, drug in enumerate(drug_metadata['drug']):
                 if i % 5 == 0:  # Show every 5th drug label to avoid overcrowding
-                    ax_tsne.annotate(drug[:8], (embedding_2d[i, 0], embedding_2d[i, 1]), 
+                    ax_tsne.annotate(drug[:8], (tsne_embedding[i, 0], tsne_embedding[i, 1]), 
                                     fontsize=8, alpha=0.7, ha='center')
             
             ax_tsne.set_xlabel('t-SNE 1', fontsize=14)
             ax_tsne.set_ylabel('t-SNE 2', fontsize=14)
-            ax_tsne.set_title(f'{method_name.upper()} Drug-Level Clustering\n'
-                             f'{len(drug_metadata)} drugs (hierarchical: wells → concentrations → drugs)', 
-                             fontsize=18, fontweight='bold')
+            ax_tsne.set_title(f'{method_name.upper()} t-SNE Projection\n'
+                             f'{len(drug_metadata)} drugs', 
+                             fontsize=16, fontweight='bold')
             ax_tsne.grid(True, alpha=0.3)
             
-            # For each cluster, show concentration-level oxygen patterns
+            # Top right: UMAP plot
+            ax_umap = fig.add_subplot(gs[0, 1])
+            
+            scatter = ax_umap.scatter(umap_embedding[:, 0], umap_embedding[:, 1], 
+                                     c=drug_labels, cmap='tab10', s=120, alpha=0.8, 
+                                     edgecolors='black', linewidth=1)
+            
+            # Label drugs (only a subset to avoid overcrowding)
+            for i, drug in enumerate(drug_metadata['drug']):
+                if i % 5 == 0:  # Show every 5th drug label to avoid overcrowding
+                    ax_umap.annotate(drug[:8], (umap_embedding[i, 0], umap_embedding[i, 1]), 
+                                    fontsize=8, alpha=0.7, ha='center')
+            
+            ax_umap.set_xlabel('UMAP 1', fontsize=14)
+            ax_umap.set_ylabel('UMAP 2', fontsize=14)
+            ax_umap.set_title(f'{method_name.upper()} UMAP Projection\n'
+                             f'{len(drug_metadata)} drugs', 
+                             fontsize=16, fontweight='bold')
+            ax_umap.grid(True, alpha=0.3)
+            
+            # For each cluster, show concentration-level oxygen patterns (full width)
             for cluster_id in range(n_clusters):
-                ax = plt.subplot(n_clusters + 1, 1, cluster_id + 2)
+                # Use full width for oxygen curve plots
+                ax = fig.add_subplot(gs[cluster_id + 1, :])
                 
                 # Get drugs in this cluster
                 cluster_mask = drug_labels == cluster_id
@@ -536,9 +573,9 @@ class HierarchicalClusterOxygenVisualization:
                 ax.set_ylim(-10, 100)  # Extended oxygen range as requested
             
             plt.suptitle(f'{method_name.upper()} Hierarchical Embedding Analysis\n'
-                        f'Proper hierarchy: {len(well_metadata)} wells → {len(concentration_metadata)} concentrations → {len(drug_metadata)} drugs\n'
-                        f'Each cluster shows drugs with similar dose-response patterns',
-                        fontsize=20, fontweight='bold')
+                        f'Hierarchy: {len(well_metadata)} wells → {len(concentration_metadata)} concentrations → {len(drug_metadata)} drugs\n'
+                        f'Top: t-SNE and UMAP projections | Bottom: Dose-response curves by cluster',
+                        fontsize=20, fontweight='bold', y=0.98)
             plt.tight_layout()
             
             # Save
