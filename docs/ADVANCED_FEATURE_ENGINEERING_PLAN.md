@@ -104,28 +104,28 @@ Autoencoders provide a powerful complement to hand-crafted features (catch22, SA
 **Goal**: Extract catch22 and SAX features at multiple temporal resolutions
 
 #### 2.1 Rolling Window Implementation
-- [ ] Create function to extract features over sliding windows
-- [ ] Implement for 24h windows (≈15 timepoints per window)
-- [ ] Implement for 48h windows (≈30 timepoints per window)  
-- [ ] Implement for 96h windows (≈60 timepoints per window)
-- [ ] Add 50% overlap between windows to smooth temporal transitions
+- [x] Create function to extract features over sliding windows
+- [x] Implement for 24h windows (≈15 timepoints per window)
+- [x] Implement for 48h windows (≈30 timepoints per window)  
+- [x] Implement for 96h windows (≈60 timepoints per window)
+- [x] Add 50% overlap between windows to smooth temporal transitions
 
 #### 2.2 catch22 Pipeline
-- [ ] Install and test pycatch22 library
-- [ ] Handle missing values and short windows gracefully
-- [ ] Add error handling for failed catch22 computations
-- [ ] Store results in structured format: `well_id | window_start | window_size | feature_name | feature_value`
-- [ ] Add metadata: window_number, hours_since_baseline, media_changes_in_window
+- [x] Install and test pycatch22 library
+- [x] Handle missing values and short windows gracefully
+- [x] Add error handling for failed catch22 computations
+- [x] Store results in structured format: `well_id | window_start | window_size | feature_name | feature_value`
+- [x] Add metadata: window_number, hours_since_baseline, media_changes_in_window
 
 #### 2.3 Hierarchical SAX Features
-- [ ] Implement multi-level SAX transformation using existing `sax.py` code
-- [ ] Extract SAX features at multiple resolutions:
-  - **Coarse level**: 4-8 symbols, 2-4 alphabet size (capture major trends)
-  - **Medium level**: 8-16 symbols, 4-6 alphabet size (capture medium patterns)
-  - **Fine level**: 16-32 symbols, 6-8 alphabet size (capture detailed patterns)
-- [ ] Calculate SAX distance matrices between different conditions
-- [ ] Extract SAX pattern frequencies and transition probabilities
-- [ ] Build SAX motif discovery for recurring patterns
+- [x] Implement multi-level SAX transformation using existing `sax.py` code
+- [x] Extract SAX features at multiple resolutions:
+  - **Coarse level**: 4 symbols, 3 alphabet size (capture major trends)
+  - **Medium level**: 8 symbols, 4 alphabet size (capture medium patterns)
+  - **Fine level**: 16 symbols, 6 alphabet size (capture detailed patterns)
+- [x] Calculate SAX pattern frequencies and transition probabilities
+- [x] Extract SAX complexity measures (entropy, Lempel-Ziv, transitions)
+- [x] Build pattern-based features (trend analysis, symbol dominance)
 
 #### 2.4 Baseline-Specific Features
 - [ ] Extract catch22 features from baseline period only (0-48h)
@@ -137,27 +137,27 @@ Autoencoders provide a powerful complement to hand-crafted features (catch22, SA
 **Goal**: Identify media change events and their characteristics
 
 #### 3.1 Event Detection Algorithm
-- [ ] Use control wells to identify typical media change timing
-- [ ] Calculate rolling variance in 6h windows
-- [ ] Detect sudden increases in variance (>2x baseline)
-- [ ] Validate detected events by checking spike characteristics (height, duration)
-- [ ] Create event timeline for each plate
+- [x] Use control wells to identify typical media change timing
+- [x] Calculate rolling variance in 6h windows
+- [x] Detect sudden increases in variance (>2x baseline)
+- [x] Validate detected events by checking spike characteristics (height, duration)
+- [x] Create event timeline for each plate
 
 #### 3.2 Spike Characterization
-- [ ] For each detected media change, measure:
+- [x] For each detected media change, measure:
   - Pre-spike baseline (6h before)
   - Peak height (maximum deviation)
   - Time to peak (from event start)
   - Recovery time (return to 90% of baseline)
   - Post-spike new baseline (6h after recovery)
-- [ ] Compare drug wells vs control wells for each metric
-- [ ] Calculate variability across 4 replicates
+- [x] Compare drug wells vs control wells for each metric
+- [x] Calculate variability across 4 replicates
 
 #### 3.3 Event-Indexed Features
-- [ ] Extract catch22 features in periods between media changes
-- [ ] Number each media change event (1st, 2nd, 3rd, etc.)
-- [ ] Calculate cumulative response metrics
-- [ ] Build "media changes survived" counter for each well
+- [x] Extract catch22 features in periods between media changes
+- [x] Number each media change event (1st, 2nd, 3rd, etc.)
+- [x] Calculate cumulative response metrics
+- [x] Build "media changes survived" counter for each well
 
 ### Step 4: Dose-Response Normalization ⭐ CRITICAL
 **Goal**: Implement Hill curve fitting for cross-drug comparability

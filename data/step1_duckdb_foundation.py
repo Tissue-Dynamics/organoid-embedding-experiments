@@ -26,7 +26,7 @@ load_dotenv()
 class DuckDBDataLoader:
     """Enhanced data loader using DuckDB for direct database queries."""
     
-    def __init__(self, sample_plates=10):
+    def __init__(self, sample_plates=None):
         self.sample_plates = sample_plates
         self.conn = None
         self.postgres_string = None
@@ -76,15 +76,24 @@ class DuckDBDataLoader:
         return dosing_times
     
     def load_sample_plates(self):
-        """Load list of sample plates for processing."""
-        print(f"Getting sample of {self.sample_plates} plates...")
-        
-        query = f"""
-        SELECT DISTINCT plate_id::text as plate_id
-        FROM postgres_scan('{self.postgres_string}', 'public', 'processed_data')
-        WHERE is_excluded = false
-        LIMIT {self.sample_plates}
-        """
+        """Load list of plates for processing."""
+        if self.sample_plates is None:
+            print("Getting all available plates...")
+            query = f"""
+            SELECT DISTINCT plate_id::text as plate_id
+            FROM postgres_scan('{self.postgres_string}', 'public', 'processed_data')
+            WHERE is_excluded = false
+            ORDER BY plate_id
+            """
+        else:
+            print(f"Getting sample of {self.sample_plates} plates...")
+            query = f"""
+            SELECT DISTINCT plate_id::text as plate_id
+            FROM postgres_scan('{self.postgres_string}', 'public', 'processed_data')
+            WHERE is_excluded = false
+            ORDER BY plate_id
+            LIMIT {self.sample_plates}
+            """
         
         plates_df = self.conn.execute(query).fetchdf()
         plate_ids = plates_df['plate_id'].tolist()
@@ -288,8 +297,8 @@ def main():
     """Main Step 1 pipeline with DuckDB and event-relative baselines."""
     print("=== Step 1: Data Pipeline Foundation (DuckDB Version) ===\n")
     
-    # Initialize data loader
-    loader = DuckDBDataLoader(sample_plates=10)
+    # Initialize data loader (None = all plates)
+    loader = DuckDBDataLoader(sample_plates=None)
     
     # Load event data for baseline detection
     events_df = loader.load_event_data()
@@ -322,10 +331,10 @@ def main():
     output_dir = project_root / "results" / "data"
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    output_path = output_dir / "step1_quality_assessment_duckdb.parquet"
+    output_path = output_dir / "step1_quality_assessment_all_plates.parquet"
     results_df.to_parquet(output_path, index=False)
     
-    csv_path = output_dir / "step1_quality_assessment_duckdb.csv"
+    csv_path = output_dir / "step1_quality_assessment_all_plates.csv"
     results_df.to_csv(csv_path, index=False)
     
     print(f"\n✅ Step 1 Complete!")

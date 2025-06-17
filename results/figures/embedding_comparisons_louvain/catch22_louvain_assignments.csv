@@ -1,0 +1,241 @@
+drug,cluster
+A-1087,0
+ARRY-380,1
+Abemaciclib,1
+Abiraterone,2
+Acalabrutinib,3
+Afatinib,1
+Alectinib,3
+Allopurinol,5
+Alpelisib,6
+Altretamine,7
+Altretamine.1,4
+Ambrisentan,9
+Amifostine,10
+Aminolevulinic acid hydrochloride,6
+Amiodarone,11
+Anastrozole,6
+Apalutamide,8
+Arsenic trioxide,10
+Asciminib,3
+Auranofin,8
+Avapritinib,8
+Axitinib,3
+Azacitidine,3
+BLU-667,0
+Belinostat,1
+Belzutifan,5
+Bendamustine hydrochloride,5
+Binimetinib,2
+Bleomycin sulfate,10
+Bortezomib,10
+Bosutinib,8
+Brigatinib,0
+Buspirone,9
+Busulfan,7
+Busulfan.1,4
+Cabazitaxel,1
+Cabozantinib,6
+Capecitabine,0
+Capmatinib,1
+Carboplatin,7
+Carboplatin.1,4
+Carfilzomib,0
+Carmustine,5
+Celecoxib,0
+Ceritinib,3
+Chlorambucil,10
+Chlorambucil.1,4
+Cisplatin,3
+Cladribine,10
+Clofarabine,10
+Clozapine,9
+Cobimetinib,3
+Copanlisib tris-HCl,0
+Crizotinib,6
+Cyclophosphamide,7
+Cyclophosphamide.1,4
+Cytarabine hydrochloride,10
+Dabrafenib mesylate,2
+Dacarbazine,3
+Dacomitinib,0
+Dactinomycin,10
+Darolutamide,8
+Dasatinib,0
+Daunorubicin hydrochloride,7
+Daunorubicin.1,10
+Decitabine,6
+Dexrazoxane,0
+Docetaxel,10
+Doxorubicin hydrochloride,7
+Doxorubicin.1,10
+Duvelisib,0
+E.,6
+Enasidenib,8
+Encorafenib,8
+Entacapone,9
+Entrectinib,6
+Enzalutamide,2
+Epirubicin hydrochloride,11
+Erdafitinib,3
+Erismodegib,2
+Erlotinib hydrochloride,3
+Estramustine phosphate sodium,0
+Etoposide,10
+Everolimus,6
+Evobrutinib,11
+Evobrutinib.1,10
+Evobrutinib.2,11
+Evobrutinib.3,11
+Exemestane,7
+Exemestane.1,4
+Exportin (mg/ml),6
+Exportin (mg/ml).1,6
+Extatecan Mesylate,10
+Extatecan Mesylate.1,10
+F.,4
+Fedratinib,11
+Fenebrutinib,11
+Floxuridine,10
+Fludarabine phosphate,10
+Fluorouracil,5
+Flupirtine,11
+Fruquintinib,3
+Fulvestrant,5
+G,8
+G.1,7
+Gefitinib,7
+Gefitinib.1,4
+Gemcitabine hydrochloride,7
+Gemcitabine.1,4
+Gilteritinib,0
+Glasdegib,2
+Grazoprevir,11
+Hydroxyurea,3
+Ibrutinib,8
+Idarubicin hydrochloride,10
+Idelalisib,0
+Ifosfamide,5
+Imatinib,8
+Imiquimod,6
+Infigratinib,3
+Irinotecan hydrochloride,10
+Ivosidenib,3
+Ixabepilone,0
+Ixazomib citrate,10
+Lapatinib,1
+Larotrectinib,1
+Lenalidomide,0
+Lenvatinib,3
+Letrozole,5
+Levofloxacin,9
+Lomustine,11
+Lorlatinib,2
+Mechlorethamine hydrochloride,6
+Megestrol acetate,6
+Melphalan hydrochloride,7
+Melphalan.1,7
+Mercaptopurine,6
+Methotrexate,11
+Methotrexate.1,10
+Methoxsalen,0
+Mitomycin,7
+Mitomycin.1,10
+Mitotane,5
+Mitoxantrone,7
+Mitoxantrone.1,10
+Nefazodone,9
+Nelarabine,1
+Neratinib,3
+Nilotinib,3
+Niraparib hydrochloride,6
+Olanzapine,9
+Olaparib,1
+Omacetaxine mepesuccinate,10
+Orelabrutinib,11
+Osimertinib,6
+Oxaliplatin,0
+Paclitaxel,5
+Pacritinib,11
+Palbociclib,6
+Panobinostat,10
+Pazopanib hydrochloride,6
+"Pemetrexed, Disodium salt, Heptahydrate",2
+Pemigatinib,3
+Pentostatin,7
+Pentostatin.1,4
+Pexidartinib,3
+Pipobroman,10
+Pipobroman.1,4
+Plerixafor,4
+Plicamycin,10
+Pomalidomide,3
+Ponatinib,3
+Pralatrexate,10
+Procarbazine hydrochloride,3
+Proglitazone,9
+Raloxifene,2
+Regorafenib,6
+Ribociclib,8
+Romidepsin,10
+Rucaparib phosphate,10
+Ruxolitinib,2
+Sanofi-1,4
+Sanofi-2,4
+Sanofi-3,4
+Sanofi-4,4
+Sanofi-5,4
+Sanofi-6,4
+Sanofi-7,4
+Sanofi-8,10
+Selinexor,10
+Selpercatinib,3
+Selumetinib,3
+Sirolimus,10
+Sitaxentan,11
+Sorafenib,0
+Sotorasib,3
+Streptozocin,10
+Sunitinib,3
+Talazoparib,2
+Tamoxifen citrate,7
+Tamoxifen.1,4
+Tazemetostat,3
+Temozolomide,7
+Temozolomide.1,4
+Temsirolimus,6
+Teniposide,7
+Teniposide.1,10
+Teriflunomide,11
+Thalidomide,10
+Thioguanine,10
+Thiotepa,7
+Thiotepa.1,4
+Tiranibulin,0
+Tivozanib,1
+Tolcapone,9
+Tolebrutinib,6
+Topotecan hydrochloride,7
+Topotecan.1,10
+Trametinib,10
+Tretinoin,5
+Triethylenemelamine,10
+Trifluridine,5
+Trilaciclib dihydrochloride,3
+Troglitazone,9
+Trovafoxacin,9
+Umbralisib,6
+Uracil mustard,6
+Uridine triacetate,8
+Valrubicin,7
+Vandetanib,0
+Vemurafenib,3
+Venetoclax,3
+Vinblastine sulfate,7
+Vinblastine.1,4
+Vincristine sulfate,7
+Vinorelbine tartrate,0
+Vismodegib,1
+Vorinostat,0
+Zanubrutinib,6
+Zoledronic acid,0

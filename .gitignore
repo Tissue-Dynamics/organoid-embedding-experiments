@@ -20,13 +20,20 @@ venv/
 
 # Data and logs
 *.log
+# Don't ignore CSV files in results directory
 *.csv
+!results/**/*.csv
 *.joblib
 *.json
+!mcp.json
 
 # Temporary
 *.tmp
 *.bak
+
+# Large data files
+*.parquet
+!results/**/*.parquet
 
 # UV lock file
 uv.lock

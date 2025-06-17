@@ -6,18 +6,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a research codebase for comparing embedding methods on liver organoid oxygen time series data. The project evaluates traditional methods (DTW, Fourier, SAX), feature-based approaches (TSFresh, catch22), and deep learning methods (autoencoders, transformers, triplet networks) on ~7,680 time series from 240 drug treatments.
 
-**CURRENT STATUS: Step 1 Data Pipeline Foundation COMPLETE. Ready for Step 2 multi-timescale feature extraction.**
+**CURRENT STATUS: Step 3 Media Change Event Detection COMPLETE. Ready for Step 4 dose-response normalization.**
 
 ### Recent Accomplishments
 - ✅ **Step 1 Complete**: Enhanced data loader with quality flags and baseline detection
-- ✅ Quality flag implementation: 6 flags (low_points, high_noise, sensor_drift, baseline_unstable, replicate_discord, media_change_outlier)
-- ✅ Baseline period extraction: 89.3% wells with sufficient 48h baseline data
-- ✅ Event integration: Real dosing and media change timing from Supabase database
-- ✅ Plate-level statistics: Duration, control percentage, drug coverage
-- ✅ Step 1 outputs saved: Foundation data ready for feature extraction
+  - Quality flag implementation: 6 flags (low_points, high_noise, sensor_drift, baseline_unstable, replicate_discord, media_change_outlier)
+  - Event-relative baseline detection: 88.3% wells using pre-dosing periods
+  - All 33 plates processed: 10,930 wells with comprehensive quality assessment
+- ✅ **Step 2 Complete**: Multi-timescale feature extraction pipeline
+  - Rolling window implementation: 24h, 48h, 96h windows with 50% overlap
+  - catch22 features: 22 time series features per window (25 total including metadata)
+  - Hierarchical SAX features: Coarse/medium/fine levels (43 features total)
+  - Comprehensive feature set: 80 features per window (12 basic + 25 catch22 + 43 SAX)
+  - Successfully tested on 10 wells: 485 feature records generated
+- ✅ **Step 3 Complete**: Media change event detection and event-aware features
+  - Event detection from database: 103 media change events across 29 plates
+  - Spike characterization: Peak height, recovery time, baseline shifts
+  - Inter-event feature extraction: 244 feature records from periods between media changes
+  - Event-indexed catch22/SAX features avoiding media change artifacts
 
 ### Next Priority
-**Step 2**: Multi-timescale catch22 feature extraction (24h, 48h, 96h rolling windows) with dose-response Hill curve normalization.
+**Step 4**: Dose-response normalization with Hill curve fitting for cross-drug comparability.
 
 ## Critical Lessons Learned
 
@@ -50,6 +59,12 @@ export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe
 
 # Step 1: Data Pipeline Foundation (COMPLETE)
 uv run python data/step1_duckdb_foundation.py  # Complete Step 1 with DuckDB
+
+# Step 2: Multi-Timescale Feature Extraction (COMPLETE)
+uv run python data/step2_multiscale_features.py  # Extract features at 24h/48h/96h scales
+
+# Step 3: Media Change Event Detection (COMPLETE)
+uv run python data/step3_event_detection.py  # Detect and characterize media change events
 
 # Event data pipeline
 uv run python scripts/database/download_event_data.py  # Download event data from Supabase
