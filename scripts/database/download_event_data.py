@@ -51,7 +51,7 @@ def download_event_data():
         description,
         is_excluded,
         exclusion_reason
-    FROM postgres_scan_pushdown('{postgres_string}', 'public', 'event_table')
+    FROM postgres_scan('{postgres_string}', 'public', 'event_table')
     ORDER BY plate_id, occurred_at
     """
     

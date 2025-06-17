@@ -80,25 +80,25 @@ Autoencoders provide a powerful complement to hand-crafted features (catch22, SA
 **Goal**: Create robust, standardized data loading and quality assessment
 
 #### 1.1 Enhanced Data Loader
-- [ ] Create `DataLoader` class that handles parquet files with proper timestamp parsing
-- [ ] Add automatic well_id generation (plate_id + well_number)
-- [ ] Implement elapsed time calculation in hours and days from timestamps
-- [ ] Add control well identification (DMSO, media-only, concentration=0)
-- [ ] Build plate-level statistics (duration, n_wells, control percentage)
+- [x] Create `DataLoader` class that handles DuckDB queries with proper timestamp parsing
+- [x] Add automatic well_id generation (plate_id + well_number)
+- [x] Implement elapsed time calculation in hours and days from timestamps
+- [x] Add control well identification (DMSO, media-only, concentration=0)
+- [x] Build plate-level statistics (duration, n_wells, control percentage)
 
 #### 1.2 Quality Flag Implementation
-- [ ] **low_points**: Count timepoints per well, flag if < 200 measurements
-- [ ] **high_noise**: Calculate rolling CV over 24h windows, flag if mean CV > 0.3
-- [ ] **sensor_drift**: Compute correlation between O2 value and elapsed time, flag if |r| > 0.8
-- [ ] **replicate_discord**: For each drug/concentration, calculate CV across 4 replicates, flag if > 0.5
-- [ ] **baseline_unstable**: Calculate CV in first 48h, flag if > 0.1
-- [ ] **media_change_outlier**: Compare spike magnitude to control wells, flag extreme outliers
+- [x] **low_points**: Count timepoints per well, flag if < 200 measurements
+- [x] **high_noise**: Calculate rolling CV over 24h windows, flag if mean CV > 0.3
+- [x] **sensor_drift**: Compute correlation between O2 value and elapsed time, flag if |r| > 0.8
+- [x] **replicate_discord**: For each drug/concentration, calculate CV across 4 replicates, flag if > 0.5
+- [x] **baseline_unstable**: Calculate CV in first 48h, flag if > 0.1
+- [x] **media_change_outlier**: Compare spike magnitude to control wells, flag extreme outliers
 
 #### 1.3 Control Period Detection
-- [ ] For each well, identify first 24-48h as baseline period
-- [ ] Calculate baseline statistics (mean, std, trend) for this period
-- [ ] Flag wells with insufficient baseline data (< 20 timepoints in first 48h)
-- [ ] Store baseline values for later normalization
+- [x] For each well, identify first 24-48h as baseline period
+- [x] Calculate baseline statistics (mean, std, trend) for this period
+- [x] Flag wells with insufficient baseline data (< 20 timepoints in first 48h)
+- [x] Store baseline values for later normalization
 
 ### Step 2: Multi-Timescale Feature Extraction
 **Goal**: Extract catch22 and SAX features at multiple temporal resolutions

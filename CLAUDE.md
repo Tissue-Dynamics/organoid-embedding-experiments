@@ -6,18 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a research codebase for comparing embedding methods on liver organoid oxygen time series data. The project evaluates traditional methods (DTW, Fourier, SAX), feature-based approaches (TSFresh, catch22), and deep learning methods (autoencoders, transformers, triplet networks) on ~7,680 time series from 240 drug treatments.
 
-**CURRENT STATUS: Event-aware feature engineering pipeline foundation COMPLETE. Ready for advanced multi-timescale feature extraction.**
+**CURRENT STATUS: Step 1 Data Pipeline Foundation COMPLETE. Ready for Step 2 multi-timescale feature extraction.**
 
 ### Recent Accomplishments
-- ✅ Downloaded real experimental event data from Supabase (652 events, 35 dosing events, 103 media changes)
-- ✅ Created event-aware data integration pipeline with dosing and media change timing
-- ✅ Identified pre-dosing baseline periods and media change patterns across 31 plates
-- ✅ Built foundation for pharmacologically-grounded feature engineering
-- ✅ Documented comprehensive oxygen data characteristics and critical insights
-- ✅ Established event timeline: media changes occur 95.4 ± 130.0 hours after dosing
+- ✅ **Step 1 Complete**: Enhanced data loader with quality flags and baseline detection
+- ✅ Quality flag implementation: 6 flags (low_points, high_noise, sensor_drift, baseline_unstable, replicate_discord, media_change_outlier)
+- ✅ Baseline period extraction: 89.3% wells with sufficient 48h baseline data
+- ✅ Event integration: Real dosing and media change timing from Supabase database
+- ✅ Plate-level statistics: Duration, control percentage, drug coverage
+- ✅ Step 1 outputs saved: Foundation data ready for feature extraction
 
 ### Next Priority
-Implement multi-timescale catch22 feature extraction (24h, 48h, 96h windows) with dose-response Hill curve normalization for cross-drug comparability.
+**Step 2**: Multi-timescale catch22 feature extraction (24h, 48h, 96h rolling windows) with dose-response Hill curve normalization.
 
 ## Critical Lessons Learned
 
@@ -48,15 +48,15 @@ uv pip install "numpy<2.0"  # Required for TSFresh compatibility
 # Database credentials (already configured)
 export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
 
-# Current analysis scripts (READY TO USE)
+# Step 1: Data Pipeline Foundation (COMPLETE)
+uv run python data/step1_duckdb_foundation.py  # Complete Step 1 with DuckDB
+
+# Event data pipeline
+uv run python scripts/database/download_event_data.py  # Download event data from Supabase
+
+# Legacy analysis scripts
 uv run python scripts/analysis/hierarchical_cluster_oxygen_visualization.py  # Main embeddings script
 uv run python scripts/analysis/explore_drugs_table.py  # Drug metadata exploration
-uv run python scripts/analysis/comprehensive_oxygen_data_analysis.py  # Complete data analysis
-uv run python scripts/analysis/analyze_control_periods.py  # Control period analysis
-
-# Event data pipeline (NEW)
-uv run python scripts/database/download_event_data.py  # Download event data from Supabase
-uv run python scripts/database/quick_event_integration.py  # Integrate events with oxygen data
 ```
 
 ## Project Structure
@@ -91,7 +91,7 @@ uv run python scripts/database/quick_event_integration.py  # Integrate events wi
   - `plate_event_summary.parquet` - **NEW**: Plate-level event summary for quick access
   - `event_enhanced_sample.parquet` - **NEW**: Sample data with event features for testing
 - **`data/preprocessing/`** - Data cleaning and preprocessing utilities
-- **`scripts/database/`** - **NEW**: Event data pipeline using DuckDB with PostgreSQL backend
+- **`scripts/database/`** - **NEW**: Event data pipeline using DuckDB with PostgreSQL backend to Supabase
 
 ### Embedding Modules
 - **`embeddings/traditional/`** - DTW, Fourier Transform, SAX implementations
@@ -171,5 +171,5 @@ This is a **fully implemented research codebase** with comprehensive embedding m
 - **Time Series**: tslearn, tsfresh, catch22, pyts, stumpy
 - **Deep Learning**: PyTorch, TensorFlow, tsai (Time Series AI)
 - **Data Processing**: pandas, numpy, scipy, scikit-learn
-- **Database**: Supabase client
+- **Database**: DuckDB with PostgreSQL backend to Supabase
 - **Visualization**: matplotlib, seaborn, plotly, umap-learn
