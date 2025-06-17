@@ -6,17 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a research codebase for comparing embedding methods on liver organoid oxygen time series data. The project evaluates traditional methods (DTW, Fourier, SAX), feature-based approaches (TSFresh, catch22), and deep learning methods (autoencoders, transformers, triplet networks) on ~7,680 time series from 240 drug treatments.
 
-**CURRENT STATUS: Hierarchical drug embeddings COMPLETE. Ready for drug correlation analysis.**
+**CURRENT STATUS: Event-aware feature engineering pipeline foundation COMPLETE. Ready for advanced multi-timescale feature extraction.**
 
 ### Recent Accomplishments
-- ✅ Implemented hierarchical drug embeddings: 7,616 wells → 1,872 concentrations → 240 drugs
-- ✅ Generated 5 embedding method visualizations with concentration-based coloring
-- ✅ Fixed data aggregation to preserve dose-response patterns (no improper averaging)
-- ✅ Applied proper data filtering (is_excluded=false, ≥4 concentrations, ≥14 days)
-- ✅ Connected to drugs table with 198 drugs and 71 metadata columns for correlation analysis
+- ✅ Downloaded real experimental event data from Supabase (652 events, 35 dosing events, 103 media changes)
+- ✅ Created event-aware data integration pipeline with dosing and media change timing
+- ✅ Identified pre-dosing baseline periods and media change patterns across 31 plates
+- ✅ Built foundation for pharmacologically-grounded feature engineering
+- ✅ Documented comprehensive oxygen data characteristics and critical insights
+- ✅ Established event timeline: media changes occur 95.4 ± 130.0 hours after dosing
 
 ### Next Priority
-Cross embeddings with drug properties to correlate embedding components with DILI risk, hepatotoxicity, pharmacokinetics, and chemical descriptors.
+Implement multi-timescale catch22 feature extraction (24h, 48h, 96h windows) with dose-response Hill curve normalization for cross-drug comparability.
 
 ## Critical Lessons Learned
 
@@ -50,8 +51,12 @@ export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe
 # Current analysis scripts (READY TO USE)
 uv run python scripts/analysis/hierarchical_cluster_oxygen_visualization.py  # Main embeddings script
 uv run python scripts/analysis/explore_drugs_table.py  # Drug metadata exploration
-uv run python scripts/analysis/drug_embedding_correlation_analysis.py  # Drug correlations
-uv run python scripts/analysis/louvain_clustering_all_embeddings.py  # Clustering analysis
+uv run python scripts/analysis/comprehensive_oxygen_data_analysis.py  # Complete data analysis
+uv run python scripts/analysis/analyze_control_periods.py  # Control period analysis
+
+# Event data pipeline (NEW)
+uv run python scripts/database/download_event_data.py  # Download event data from Supabase
+uv run python scripts/database/quick_event_integration.py  # Integrate events with oxygen data
 ```
 
 ## Project Structure
@@ -67,6 +72,7 @@ uv run python scripts/analysis/louvain_clustering_all_embeddings.py  # Clusterin
 ├── evaluation/              # Metrics and visualization tools
 ├── scripts/                # Analysis scripts
 │   ├── analysis/          # Data analysis and visualization
+│   ├── database/          # Event data download and integration
 │   └── experiments/       # Experiment runners
 ├── results/                # Generated outputs
 │   ├── data/             # Processed embeddings and results
@@ -78,10 +84,14 @@ uv run python scripts/analysis/louvain_clustering_all_embeddings.py  # Clusterin
 ## Architecture and Key Components
 
 ### Data Layer
-- **`data/raw/`** - Raw data files (processed_data_updated.parquet, well_map_data_updated.parquet)
+- **`data/raw/`** - Raw data files:
+  - `processed_data_updated.parquet` - Main oxygen time series data
+  - `well_map_data_updated.parquet` - Well metadata and drug information  
+  - `event_data.parquet` - **NEW**: Real experimental events (dosing, media changes) downloaded from Supabase
+  - `plate_event_summary.parquet` - **NEW**: Plate-level event summary for quick access
+  - `event_enhanced_sample.parquet` - **NEW**: Sample data with event features for testing
 - **`data/preprocessing/`** - Data cleaning and preprocessing utilities
-  - Database connections handled directly via DuckDB with PostgreSQL backend
-  - Analysis scripts load data directly from Supabase using environment variables
+- **`scripts/database/`** - **NEW**: Event data pipeline using DuckDB with PostgreSQL backend
 
 ### Embedding Modules
 - **`embeddings/traditional/`** - DTW, Fourier Transform, SAX implementations
@@ -104,9 +114,10 @@ uv run python scripts/analysis/louvain_clustering_all_embeddings.py  # Clusterin
 
 ### Current Analysis Scripts
 - **`scripts/analysis/hierarchical_cluster_oxygen_visualization.py`** - Main hierarchical embedding pipeline
-- **`scripts/analysis/drug_embedding_correlation_analysis.py`** - Drug property correlations
-- **`scripts/analysis/louvain_clustering_all_embeddings.py`** - Community detection clustering
-- **`scripts/analysis/explore_drugs_table.py`** - Drug metadata exploration
+- **`scripts/analysis/comprehensive_oxygen_data_analysis.py`** - **NEW**: Complete data characterization and documentation
+- **`scripts/analysis/analyze_control_periods.py`** - **NEW**: Control period and baseline analysis
+- **`scripts/database/download_event_data.py`** - **NEW**: Downloads experimental events from Supabase
+- **`scripts/database/quick_event_integration.py`** - **NEW**: Integrates events with oxygen data
 
 ### Evaluation and Visualization
 - **`evaluation/metrics/`** - Comprehensive embedding quality assessment
@@ -123,28 +134,38 @@ uv run python scripts/analysis/louvain_clustering_all_embeddings.py  # Clusterin
 ### Current State
 This is a **fully implemented research codebase** with comprehensive embedding methods, preprocessing utilities, experiment management, and evaluation tools. All major components are functional and ready for organoid time series analysis.
 
-**LATEST PROGRESS:** Hierarchical drug embeddings are complete with 5 methods (Fourier, SAX, catch22, TSFresh, Custom). Generated cluster visualizations showing concentration-based dose-response patterns. Drug metadata table explored with 71 properties including DILI risk, hepatotoxicity flags, and pharmacokinetic data.
+**LATEST PROGRESS:** Event-aware feature engineering foundation complete. Downloaded real experimental events (dosing, media changes) from Supabase database. Created integrated data pipeline combining oxygen time series with event timing. Comprehensive data analysis and documentation generated. Ready for advanced multi-timescale feature extraction with pharmacological grounding.
 
 ### Key Results Generated
-- `results/figures/embedding_comparisons/fourier_hierarchical_clusters.png`
-- `results/figures/embedding_comparisons/tsfresh_hierarchical_clusters.png`
-- `results/figures/embedding_comparisons/catch22_hierarchical_clusters.png`
-- `results/figures/embedding_comparisons/sax_hierarchical_clusters.png`
-- `results/figures/embedding_comparisons/custom_hierarchical_clusters.png`
+- `results/figures/data_characteristics/oxygen_data_characteristics.png` - **NEW**: Comprehensive data overview
+- `results/figures/data_characteristics/control_period_analysis.png` - **NEW**: Control period analysis
+- `docs/O2_REALTIME_DATA.md` - **NEW**: Complete data documentation with feature engineering guidance
+- `docs/ADVANCED_FEATURE_ENGINEERING_PLAN.md` - **NEW**: Detailed implementation plan for pharmacological features
+- `data/raw/event_data.parquet` - **NEW**: Real experimental events from database
+- `data/raw/plate_event_summary.parquet` - **NEW**: Event summary by plate
 
-### Drug Dataset Summary
+### Dataset Summary
 - **240 qualifying drugs** (≥4 concentrations, ≥14 days data)
-- **1,872 concentration-level embeddings** (~7.8 concentrations per drug)
 - **7,616 well-level time series** (4 replicates per concentration)
-- **198 drugs in metadata table** with 71 properties including DILI, hepatotoxicity, PK data
+- **3.15M oxygen measurements** across 10,973 wells and 33 plates
+- **652 experimental events**: 35 dosing events, 103 media changes across 31 plates
+- **Event timing**: Media changes occur 95.4 ± 130.0 hours after dosing
+- **Control periods**: 24-48h pre-dosing baseline available for all wells
+
+### Event Data Status
+- ✅ **Downloaded**: Real event data from Supabase `event_table` 
+- ✅ **Integrated**: Event timing with oxygen measurements
+- ⚠️ **Partial**: Only sample integration complete (3 plates)
+- 🔄 **TODO**: Full dataset integration pending (computationally intensive)
 
 ### Critical Technical Notes
 - **Use uv for all package management** (user preference)
 - **numpy<2.0 required** for TSFresh compatibility
-- **Database connection via DuckDB** with PostgreSQL backend to Supabase
-- **Hierarchical structure preserved**: wells → concentrations → drugs (no improper averaging)
-- **Data filtering applied**: is_excluded=false throughout pipeline
-- **Concentration-based coloring** in visualizations (not drug-based) for dose-response
+- **Event data pipeline**: Downloaded via Supabase MCP, integrated with DuckDB
+- **Timezone handling**: All timestamps converted to timezone-naive for comparison
+- **Memory optimization**: Full dataset integration requires chunked processing
+- **Real experimental structure**: Dosing events, media changes, control periods now available
+- **Feature engineering foundation**: Event-aware temporal windows and dose-response normalization ready
 
 ## Technology Stack
 - **Time Series**: tslearn, tsfresh, catch22, pyts, stumpy
