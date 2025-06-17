@@ -18,6 +18,25 @@ This is a research codebase for comparing embedding methods on liver organoid ox
 ### Next Priority
 Cross embeddings with drug properties to correlate embedding components with DILI risk, hepatotoxicity, pharmacokinetics, and chemical descriptors.
 
+## Critical Lessons Learned
+
+### ⚠️ Single-Drug Outlier Correlation Problem
+**DO NOT attempt structure-function correlation analysis using molecular fingerprints vs oxygen embeddings.** 
+
+**Why this fails:**
+- With 155 drugs, any single outlier drug will appear to "correlate" with some molecular feature by chance
+- Creates spurious r=0.9+ correlations that look impressive but are meaningless
+- The "1 vs 154" comparison problem: when only one drug has extreme values, correlations are guaranteed
+- Synthetic controls confirm that random single outliers generate similar correlation strengths
+
+**Evidence from failed analysis:**
+- 17/20 "top correlations" were single-drug outliers (Fulvestrant, Sitaxentan, Alectinib)
+- When outliers removed, correlations collapsed (r=0.933 → r=-1.000)
+- No proper negative controls or biological replicability
+- Permutation tests passed but preserved the same flawed 1-vs-154 structure
+
+**Correct approach for structure-function:** Need multiple drugs with similar structures showing consistent patterns, proper negative controls, and validation across drug families - not individual outlier correlations.
+
 ## Development Commands
 
 ```bash
@@ -31,38 +50,38 @@ export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe
 # Current analysis scripts (READY TO USE)
 uv run python scripts/analysis/hierarchical_cluster_oxygen_visualization.py  # Main embeddings script
 uv run python scripts/analysis/explore_drugs_table.py  # Drug metadata exploration
-uv run python scripts/analysis/get_drug_columns.py     # Column inspection
-
-# Legacy experiment scripts (for reference)
-python experiments/run_experiment.py  # Uses default config
-python experiments/run_experiment.py --config-name quick_test  # Quick test
+uv run python scripts/analysis/drug_embedding_correlation_analysis.py  # Drug correlations
+uv run python scripts/analysis/louvain_clustering_all_embeddings.py  # Clustering analysis
 ```
 
 ## Project Structure
 
 ```
-├── data/                      # Core data processing modules
+├── data/                      # Data processing modules
+│   ├── preprocessing/        # Data cleaning and normalization
+│   └── raw/                 # Raw data files (parquet)
 ├── embeddings/               # All embedding implementations
+│   ├── traditional/         # DTW, Fourier, SAX
+│   ├── features/           # TSFresh, catch22, custom
+│   └── deep_learning/      # Autoencoders, transformers
 ├── evaluation/              # Metrics and visualization tools
-├── experiments/            # Experiment configs and runners
-├── scripts/               # Analysis and utility scripts
-│   ├── analysis/         # Data analysis scripts
-│   ├── database/         # Database utilities
-│   ├── drug_embeddings/  # Drug embedding pipeline
-│   └── data_exploration/ # Exploratory scripts
-├── results/              # Generated outputs
-│   ├── figures/         # Visualizations
-│   └── data/           # Processed data
-└── docs/               # Documentation
+├── scripts/                # Analysis scripts
+│   ├── analysis/          # Data analysis and visualization
+│   └── experiments/       # Experiment runners
+├── results/                # Generated outputs
+│   ├── data/             # Processed embeddings and results
+│   ├── embeddings/       # Specialized embedding outputs
+│   └── figures/          # All visualizations
+└── docs/                  # Documentation and summaries
 ```
 
 ## Architecture and Key Components
 
 ### Data Layer
-- **`data/loaders/supabase_loader.py`** - Central data access through `SupabaseDataLoader` class
-  - Handles all database operations with batch processing and parallel loading
-  - Key methods: `get_time_series_data()`, `prepare_time_series_matrix()`, `load_experiment_batch()`
-  - Returns pandas DataFrames and numpy arrays ready for ML workflows
+- **`data/raw/`** - Raw data files (processed_data_updated.parquet, well_map_data_updated.parquet)
+- **`data/preprocessing/`** - Data cleaning and preprocessing utilities
+  - Database connections handled directly via DuckDB with PostgreSQL backend
+  - Analysis scripts load data directly from Supabase using environment variables
 
 ### Embedding Modules
 - **`embeddings/traditional/`** - DTW, Fourier Transform, SAX implementations
@@ -83,12 +102,11 @@ python experiments/run_experiment.py --config-name quick_test  # Quick test
 - Control organoids used for baseline correction
 - Data spans ~2 weeks with drug treatments at 8 concentrations, 4 replicates each
 
-### Experiment Management
-- **`experiments/run_experiment.py`** - Main experiment runner with Hydra configuration
-- **`experiments/configs/`** - YAML configuration files for different experiment types
-  - `config.yaml` - Full comparison of all methods
-  - `quick_test.yaml` - Fast subset for testing
-  - `deep_learning_only.yaml` - Focus on neural approaches
+### Current Analysis Scripts
+- **`scripts/analysis/hierarchical_cluster_oxygen_visualization.py`** - Main hierarchical embedding pipeline
+- **`scripts/analysis/drug_embedding_correlation_analysis.py`** - Drug property correlations
+- **`scripts/analysis/louvain_clustering_all_embeddings.py`** - Community detection clustering
+- **`scripts/analysis/explore_drugs_table.py`** - Drug metadata exploration
 
 ### Evaluation and Visualization
 - **`evaluation/metrics/`** - Comprehensive embedding quality assessment
@@ -98,9 +116,9 @@ python experiments/run_experiment.py --config-name quick_test  # Quick test
 - **`evaluation/visualization/`** - Rich plotting utilities for embeddings and comparisons
 
 ### Configuration Management
-- Uses `hydra-core` for experiment configuration management
 - Environment variables for Supabase credentials via `python-dotenv`
-- Flexible YAML-based configs supporting method-specific parameters
+- Direct configuration within analysis scripts
+- Results saved as joblib files and CSV data
 
 ### Current State
 This is a **fully implemented research codebase** with comprehensive embedding methods, preprocessing utilities, experiment management, and evaluation tools. All major components are functional and ready for organoid time series analysis.
