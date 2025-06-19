@@ -42,6 +42,83 @@ class MultiScaleFeatureExtractor:
         print(f"  Window sizes: {window_sizes} hours")
         print(f"  Overlap ratio: {overlap_ratio} ({overlap_ratio*100}%)")
         print(f"  Step sizes: {self.step_sizes} hours")
+        
+        # Setup database connection
+        self._setup_database_connection()
+    
+    def _setup_database_connection(self):
+        """Setup DuckDB connection for direct database access."""
+        try:
+            database_url = os.getenv('DATABASE_URL')
+            if database_url:
+                self.conn = duckdb.connect()
+                self.conn.execute("INSTALL postgres;")
+                self.conn.execute("LOAD postgres;")
+                
+                parsed = urlparse(database_url)
+                self.postgres_string = f"host={parsed.hostname} port={parsed.port} dbname={parsed.path[1:]} user={parsed.username} password={parsed.password} sslmode=require"
+                print("  ✅ Database connection ready")
+            else:
+                self.conn = None
+                self.postgres_string = None
+                print("  ⚠️ No DATABASE_URL - database methods unavailable")
+        except Exception as e:
+            print(f"  ⚠️ Database connection failed: {e}")
+            self.conn = None
+            self.postgres_string = None
+    
+    def process_well_from_db(self, well_id):
+        """
+        Load time series data from database and extract features for a well.
+        
+        Args:
+            well_id: Well identifier (e.g., 'plate_id_well_number')
+            
+        Returns:
+            List of feature dictionaries
+        """
+        if self.conn is None or self.postgres_string is None:
+            raise ValueError("Database connection not available")
+        
+        # Extract plate_id and well_number from well_id
+        parts = well_id.split('_')
+        plate_id = '_'.join(parts[:-1])  # All parts except last
+        well_number = int(parts[-1])
+        
+        # Load time series data
+        query = f"""
+        SELECT 
+            timestamp,
+            median_o2 as o2_percent
+        FROM postgres_scan('{self.postgres_string}', 'public', 'processed_data')
+        WHERE plate_id::text = '{plate_id}' 
+        AND well_number = {well_number}
+        AND is_excluded = false
+        ORDER BY timestamp
+        """
+        
+        try:
+            data = self.conn.execute(query).fetchdf()
+            data['timestamp'] = pd.to_datetime(data['timestamp'])
+            
+            if len(data) < 10:
+                return []
+            
+            # Calculate elapsed hours
+            min_timestamp = data['timestamp'].min()
+            data['elapsed_hours'] = (data['timestamp'] - min_timestamp).dt.total_seconds() / 3600
+            
+            # Process the well
+            return self.process_well(data, well_id)
+            
+        except Exception as e:
+            print(f"    Database error for {well_id}: {e}")
+            return []
+    
+    def close(self):
+        """Close database connection."""
+        if hasattr(self, 'conn') and self.conn is not None:
+            self.conn.close()
     
     def create_rolling_windows(self, time_series_data, window_size_hours):
         """
