@@ -1,0 +1,13 @@
+community,n_drugs,avg_final_o2,avg_decline_rate,sample_drugs
+6,38,26.644167,0.07276776551653011,"Altretamine, Avapritinib, BLU-667, Brigatinib, Busulfan..."
+8,34,12.303999,0.040672153550459576,"Amifostine, Binimetinib, Bleomycin sulfate, Carboplatin.1, Chlorambucil.1..."
+11,27,9.804734,0.004238225968105368,"Altretamine.1, Arsenic trioxide, Belzutifan, Carboplatin, Cytarabine hydrochloride..."
+3,26,2.925861,0.015945515724935074,"Aminolevulinic acid hydrochloride, Anastrozole, Axitinib, Azacitidine, Busulfan.1..."
+1,24,-1.6838543,0.012235901648222221,"ARRY-380, Abemaciclib, Abiraterone, Afatinib, Alectinib..."
+9,19,7.1230555,0.038828838907748436,"A-1087, Alpelisib, Auranofin, Bosutinib, Cabozantinib..."
+2,18,40.926487,0.16462305980642697,"Bortezomib, Chlorambucil, Clofarabine, Copanlisib tris-HCl, Evobrutinib.1..."
+7,16,5.501666,-0.019867797485825556,"Ambrisentan, Buspirone, Clozapine, Entacapone, Levofloxacin..."
+4,12,-1.88311,0.00011411144560518824,"Allopurinol, Bendamustine hydrochloride, Capecitabine, Carmustine, Dexrazoxane..."
+10,12,17.124182,0.03734507440042629,"Amiodarone, Epirubicin hydrochloride, Evobrutinib, Evobrutinib.2, Evobrutinib.3..."
+0,11,-4.743038,-0.006309895436817465,"Acalabrutinib, Asciminib, Erlotinib hydrochloride, Fruquintinib, Ivosidenib..."
+5,3,30.880209,0.1148477422268426,"Dactinomycin, Ixazomib citrate, Plicamycin"

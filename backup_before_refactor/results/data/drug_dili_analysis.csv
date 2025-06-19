@@ -1,0 +1,160 @@
+drug,cv_o2_mean,cv_o2_std,cv_o2_count,mean_o2_mean,std_o2_mean,dili,binary_dili,dili_risk_category,molecular_weight,logp,half_life_hours,clearance_l_hr_kg,dili_risk_numeric,dili_simple
+A-1087,-11.464,22.9543,9,27.1362,19.1962,Ambiguous DILI-concern,True,,,,,,2.0,Moderate
+Abemaciclib,-7.846,19.036,27,-1.7806,8.4402,vLess-DILI-Concern,True,Intermediate,506.6,3.8,18.3,0.371,2.0,Moderate
+Abiraterone,-0.7638,0.6401,25,-3.6878,3.444,vMost-DILI-Concern,True,Severe,349.5,4.6,12.0,23.1,4.0,High/Severe
+Acalabrutinib,-64.1263,256.8439,24,-1.2023,9.6648,vNo-DILI-Concern,False,Low,465.5,3.0,1.5,2.34,1.0,Low
+Afatinib,-4.6467,5.245,27,5.7964,12.6319,vLess-DILI-Concern,True,Moderate,485.9,3.6,37.0,1.311,2.0,Moderate
+Alectinib,-1.1749,1.3275,31,-3.177,3.6549,vLess-DILI-Concern,True,Moderate,482.6,5.2,33.0,1.17,2.0,Moderate
+Allopurinol,-5.5056,6.4066,15,-0.9695,4.5862,vMost-DILI-Concern,True,High,136.114,-0.7,1.2,0.948,3.0,High/Severe
+Alpelisib,-1.4927,2.503,27,6.0157,7.8317,vLess-DILI-Concern,True,Low,441.5,3.2,8.5,0.131,1.0,Low
+Altretamine,-4.0179,6.7137,14,14.804,14.2548,Ambiguous DILI-concern,True,,210.28,2.7,7.5,,2.0,Moderate
+Amifostine,-3.7051,8.6434,4,15.3109,11.0165,vNo-DILI-Concern,False,Low,214.23,-4.5,7.3,0.74,1.0,Low
+Amiodarone,0.3441,1.1569,39,34.4813,16.5936,vMost-DILI-Concern,True,Severe,645.3,7.6,1392.0,0.15,4.0,High/Severe
+Anastrozole,-3.2575,2.2232,30,-2.8356,7.3074,vLess-DILI-Concern,True,Low,293.4,2.1,45.0,0.022,1.0,Low
+Apalutamide,-3.2963,2.2758,26,-2.6647,6.6099,vNo-DILI-Concern,False,Low,477.4,3.0,72.0,0.025,1.0,Low
+Arsenic trioxide,-34.3856,56.0163,9,4.0704,9.5514,Ambiguous DILI-concern,True,Moderate,197.841,,12.0,0.7,2.0,Moderate
+Asciminib,-17.0378,26.7408,28,5.2321,11.8193,vLess-DILI-Concern,True,Low,449.8,3.0,,,1.0,Low
+Auranofin,-4.0439,5.3117,27,8.5181,9.8733,vLess-DILI-Concern,True,Low frequency but potentially severe,678.5,,624.0,,2.0,Moderate
+Avapritinib,-2.6121,4.3468,22,14.2743,9.5521,vNo-DILI-Concern,False,Low,498.6,1.9,,,1.0,Low
+Axitinib,-1.2448,1.2446,24,1.1789,7.9762,vNo-DILI-Concern,False,Moderate,386.5,4.2,4.3,0.54,2.0,Moderate
+Azacitidine,-9.8918,21.7328,46,-1.1746,7.1886,Ambiguous DILI-concern,True,Low risk,244.2,-2.2,0.69,2.21,1.0,Low
+BLU-667,-2.6067,6.537,28,14.6758,11.424,vLess-DILI-Concern,True,Moderate,533.6,3.1,22.2,0.15,2.0,Moderate
+Belinostat,-2.8829,1.3635,23,-3.202,7.9298,vMost-DILI-Concern,True,Severe,318.3,1.7,1.1,1.063,4.0,High/Severe
+Belzutifan,-8.6352,15.7147,23,-3.0501,7.6884,vNo-DILI-Concern,False,Low,383.3,2.0,13.2,0.086,1.0,Low
+Binimetinib,-52.2115,134.9858,16,-1.6784,10.7926,vLess-DILI-Concern,True,Moderate,441.2,3.1,3.5,0.289,2.0,Moderate
+Bortezomib,-1.1305,8.3924,29,48.9642,32.0993,vMost-DILI-Concern,True,Low-Moderate,384.2,,100.0,0.23,1.5,Low
+Bosutinib,-4.6181,5.8941,28,8.6419,10.0369,vMost-DILI-Concern,True,Severe,530.4,5.4,22.5,2.7,4.0,High/Severe
+Brigatinib,-6.4488,16.1722,28,11.339,10.934,vLess-DILI-Concern,True,Low,584.1,4.6,25.0,0.18,1.0,Low
+Busulfan,0.7013,0.1798,12,33.2938,21.922,vMost-DILI-Concern,True,High VOD risk,246.3,-0.5,2.73,0.173,2.0,Moderate
+Cabazitaxel,-1.757,1.8885,5,0.1307,8.7387,vNo-DILI-Concern,False,Low,835.9,2.7,95.0,0.693,1.0,Low
+Cabozantinib,-1.3789,1.5208,32,6.8794,7.8996,vLess-DILI-Concern,True,Moderate,501.5,5.4,110.0,0.044,2.0,Moderate
+Capecitabine,-25.4504,58.9003,33,-0.1694,8.0963,Ambiguous DILI-concern,True,Low,359.35,0.6,0.75,10.8,1.0,Low
+Capmatinib,-3.6623,5.184,25,-1.112,6.9594,vLess-DILI-Concern,True,Moderate,412.4,2.9,7.84,0.65,2.0,Moderate
+Carboplatin,-0.317,2.652,13,24.2729,17.7102,vLess-DILI-Concern,True,,371.25,,4.25,0.063,2.0,Moderate
+Carfilzomib,-0.4966,1.049,29,20.5128,12.8502,vLess-DILI-Concern,True,Moderate,719.9,4.7,0.35,,2.0,Moderate
+Carmustine,-12.7378,29.6059,21,-0.618,5.5904,vMost-DILI-Concern,True,Severe,214.05,1.5,0.75,3.36,4.0,High/Severe
+Celecoxib,-4.204,4.0818,16,-1.0667,7.6803,vLess-DILI-Concern,True,,381.4,3.4,,,2.0,Moderate
+Ceritinib,-1.9264,2.333,26,8.3489,11.5229,vLess-DILI-Concern,True,Moderate,558.1,6.4,41.0,0.47,2.0,Moderate
+Chlorambucil,0.524,0.9033,25,37.2266,26.3667,vLess-DILI-Concern,True,Low,304.2,1.7,1.4,0.153,1.0,Low
+Cisplatin,-10.6495,12.348,41,-1.4648,7.685,vLess-DILI-Concern,True,Low,300.05,,25.9,0.383,1.0,Low
+Cladribine,-3.2412,4.2039,18,9.2973,13.0834,Ambiguous DILI-concern,True,,285.69,0.8,,,2.0,Moderate
+Clofarabine,-0.9887,4.0869,25,29.9869,12.9594,Ambiguous DILI-concern,True,,303.68,0.9,5.2,28.8,2.0,Moderate
+Cobimetinib,-1.3829,1.4425,17,12.0366,12.5364,vLess-DILI-Concern,True,High,531.3,3.9,44.0,0.197,3.0,High/Severe
+Crizotinib,-1.2302,1.0723,30,9.1787,10.2804,vLess-DILI-Concern,True,High,450.3,3.7,42.0,0.88,3.0,High/Severe
+Cyclophosphamide,-0.3947,3.8672,14,32.0148,20.1526,vLess-DILI-Concern,True,Low-Moderate,261.08,0.6,7.5,0.063,1.5,Low
+Dacarbazine,-22.8012,37.8613,37,-0.3213,7.9148,vMost-DILI-Concern,True,,182.18,-0.6,5.0,0.22,2.0,Moderate
+Dacomitinib,-5.6288,8.3902,18,12.4508,11.6486,vNo-DILI-Concern,False,Low,469.9,4.4,70.0,0.356,1.0,Low
+Dactinomycin,0.0851,2.37,89,61.9957,20.2975,vMost-DILI-Concern,True,Severe - High Risk,1255.4,3.8,25.0,0.199,4.0,High/Severe
+Darolutamide,-9.0359,25.2753,27,0.214,8.4194,vNo-DILI-Concern,False,,398.8,1.8,15.8,,0.0,No Concern
+Dasatinib,-7.5894,13.1263,29,7.099,9.7355,vLess-DILI-Concern,True,Moderate,488.0,3.6,3.5,5.2,2.0,Moderate
+Decitabine,-4.3742,9.5067,27,-3.0028,6.7905,Ambiguous DILI-concern,True,Moderate,228.21,-1.2,0.58,1.75,2.0,Moderate
+Dexrazoxane,-16.7638,26.9706,37,-0.4213,6.8819,Ambiguous DILI-concern,True,,268.27,-1.4,2.2,0.091,2.0,Moderate
+Docetaxel,-0.8151,1.5231,5,4.0471,7.371,vLess-DILI-Concern,True,,807.9,1.6,,,2.0,Moderate
+Duvelisib,-37.764,75.0194,18,11.9846,9.4513,vLess-DILI-Concern,True,High concern,416.9,4.1,4.7,0.065,3.0,High/Severe
+Enasidenib,-4.7942,4.3944,30,-2.3769,7.1308,vLess-DILI-Concern,True,,473.4,3.5,137.0,0.01,2.0,Moderate
+Encorafenib,-6.6359,18.0657,29,-2.9022,6.7265,vNo-DILI-Concern,False,Moderate,540.0,2.7,3.5,0.457,2.0,Moderate
+Entrectinib,-1.047,0.8094,29,8.0643,9.3786,vNo-DILI-Concern,False,,560.6,5.7,,,0.0,No Concern
+Enzalutamide,-8.2575,11.1279,18,2.0213,9.8472,vNo-DILI-Concern,False,Low,464.4,3.6,139.0,0.0084,1.0,Low
+Erdafitinib,-1.62,1.6194,21,1.1751,7.5849,vNo-DILI-Concern,False,,446.5,3.2,,,0.0,No Concern
+Erismodegib,-24.3804,71.9604,18,6.0691,13.1189,vNo-DILI-Concern,False,Low,485.5,5.8,696.0,0.136,1.0,Low
+Etoposide,-4.5281,7.263,24,20.2575,14.5731,vLess-DILI-Concern,True,,588.6,0.6,,,2.0,Moderate
+Everolimus,-17.4233,71.3695,24,-0.4324,6.6113,Ambiguous DILI-concern,True,,958.2,5.9,,,2.0,Moderate
+Evobrutinib,0.6063,0.1499,17,23.7155,12.7747,vMost-DILI-Concern,True,Severe,429.5,4.2,2.0,2.58,4.0,High/Severe
+Exemestane,-8.1109,16.0474,13,19.1524,18.7981,vMost-DILI-Concern,True,,296.4,3.1,,,2.0,Moderate
+Extatecan Mesylate,-0.393,2.7675,14,33.2048,19.8005,vLess-DILI-Concern,True,Moderate,,,,,2.0,Moderate
+Fedratinib,-0.3506,0.831,25,10.9832,7.9965,vLess-DILI-Concern,True,,524.7,4.8,,,2.0,Moderate
+Fenebrutinib,-3.7666,7.4274,10,15.3321,14.4015,vNo-DILI-Concern,False,High,664.8,2.3,9.0,,3.0,High/Severe
+Floxuridine,-0.1851,2.96,9,23.4709,18.7275,vMost-DILI-Concern,True,High Risk,246.19,-1.2,0.22,,3.0,High/Severe
+Fluorouracil,-4.3518,3.4467,21,1.9768,6.5564,vLess-DILI-Concern,True,Moderate,130.08,-0.9,0.26,0.51,2.0,Moderate
+Flupirtine,0.6691,0.1554,17,32.787,19.319,vMost-DILI-Concern,True,SEVERE - DRUG WITHDRAWN,304.32,2.4,8.0,0.244,2.0,Moderate
+Fruquintinib,-12.7066,15.214,17,-1.3211,9.7268,vNo-DILI-Concern,False,,393.4,3.4,42.0,0.0101,0.0,No Concern
+Fulvestrant,-10.511,19.0015,9,1.9908,5.4793,Ambiguous DILI-concern,True,Low-Moderate,606.8,9.2,1176.0,0.708,1.5,Low
+Gefitinib,-4.3134,8.4948,10,20.7188,19.1708,vMost-DILI-Concern,True,,446.9,4.1,,,2.0,Moderate
+Gilteritinib,-1.1862,4.0559,13,7.742,7.8931,vNo-DILI-Concern,False,,552.7,3.5,,,0.0,No Concern
+Glasdegib,-39.1248,109.1894,19,2.4605,10.9293,vNo-DILI-Concern,False,Low-Moderate,374.4,2.4,17.4,0.092,1.5,Low
+Grazoprevir,0.819,0.1401,11,20.5402,16.5375,vLess-DILI-Concern,True,Moderate,766.9,4.7,,,2.0,Moderate
+Hydroxyurea,-0.8387,0.9917,31,-2.1359,3.6582,vMost-DILI-Concern,True,,76.055,-1.8,,,2.0,Moderate
+Ibrutinib,-6.9481,10.6598,24,5.3382,10.0192,vLess-DILI-Concern,True,,440.5,3.6,,,2.0,Moderate
+Idelalisib,-34.1608,107.8303,14,6.9737,6.1323,vMost-DILI-Concern,True,High Risk - Black Box Warning,415.4,3.7,8.2,,4.0,High/Severe
+Ifosfamide,-4.7038,3.971,19,-1.6107,5.5012,vLess-DILI-Concern,True,Low Risk,261.08,0.9,11.0,,1.0,Low
+Imatinib,-2.4364,2.3084,25,-0.0395,6.5263,vMost-DILI-Concern,True,Moderate,493.6,3.5,18.0,0.18,2.0,Moderate
+Imiquimod,-2.8687,2.0982,26,-3.2544,7.3142,vNo-DILI-Concern,False,,240.3,2.6,,,0.0,No Concern
+Infigratinib,-1.0247,0.9579,22,6.705,11.4765,vNo-DILI-Concern,False,Low,560.5,4.7,33.5,0.47,1.0,Low
+Ivosidenib,-17.7512,28.1008,29,-1.4348,9.7126,vLess-DILI-Concern,True,,583.0,3.4,93.5,0.076,2.0,Moderate
+Ixabepilone,-2.771,12.6292,27,12.5593,11.5703,Ambiguous DILI-concern,True,,506.7,3.6,,,2.0,Moderate
+Ixazomib citrate,-0.1608,1.8105,28,46.5036,25.9068,vLess-DILI-Concern,True,Low,517.1,,228.0,0.027,1.0,Low
+Lapatinib,-326.2252,1690.3988,28,-1.9028,9.3787,vMost-DILI-Concern,True,,581.1,5.1,,,2.0,Moderate
+Larotrectinib,-4.4906,7.2128,27,-0.3817,8.1333,vNo-DILI-Concern,False,,428.4,1.7,2.9,1.4,0.0,No Concern
+Lenalidomide,-15.1531,33.4308,42,0.1336,7.25,vLess-DILI-Concern,True,,259.26,-0.5,,,2.0,Moderate
+Lenvatinib,-1.46,1.0505,26,-1.4059,5.9342,vLess-DILI-Concern,True,,426.9,2.8,,,2.0,Moderate
+Letrozole,-5.1089,3.554,10,-1.5208,5.4142,vLess-DILI-Concern,True,vLess-DILI-Concern,285.3,2.7,42.0,0.018,1.0,Low
+Lomustine,-24.9992,66.9623,8,8.757,10.2869,vLess-DILI-Concern,True,Moderate,233.69,2.8,2.1,,2.0,Moderate
+Lorlatinib,-0.839,0.8121,28,-1.0299,5.7437,vNo-DILI-Concern,False,,406.4,1.5,,,0.0,No Concern
+Megestrol acetate,-9.9518,32.7286,27,1.9381,8.0111,vLess-DILI-Concern,True,Low,384.52,,34.2,,1.0,Low
+Mercaptopurine,-1.7035,1.5096,30,3.8139,9.3936,vMost-DILI-Concern,True,,152.18,,0.78,1.281,2.0,Moderate
+Methotrexate,-1.1963,4.5395,20,27.693,17.4359,vMost-DILI-Concern,True,vMost-DILI-Concern,454.4,-1.8,6.5,0.106,4.0,High/Severe
+Methoxsalen,0.2555,1.1891,22,18.7095,10.1106,vLess-DILI-Concern,True,Low - vLess-DILI-Concern,216.19,1.9,1.25,20.8,1.0,Low
+Mitomycin,-14.587,45.9186,15,35.7458,23.3642,vLess-DILI-Concern,True,High risk - cumulative dose-dependent,334.33,-0.4,0.667,0.257,3.0,High/Severe
+Mitotane,-6.8636,9.0066,16,-0.5177,5.3782,vNo-DILI-Concern,False,Low hepatotoxicity risk,320.0,6.2,1272.0,0.0134,1.0,Low
+Mitoxantrone,-0.5619,3.5122,19,23.4315,20.4779,vLess-DILI-Concern,True,,444.5,1.0,75.0,0.28,2.0,Moderate
+Nelarabine,-4.4894,4.5126,28,-2.6672,8.5473,vLess-DILI-Concern,True,,297.27,-0.7,0.3,2.8,2.0,Moderate
+Neratinib,-19.4487,22.1405,13,-0.9157,9.9521,vNo-DILI-Concern,False,Moderate,557.0,4.9,14.6,4.01,2.0,Moderate
+Nilotinib,-3.0215,1.5905,20,-2.453,6.2619,Ambiguous DILI-concern,True,,529.5,4.9,,,2.0,Moderate
+Olaparib,-9.98,22.4673,25,-1.2426,9.0555,vNo-DILI-Concern,False,,434.5,1.9,,,0.0,No Concern
+Orelabrutinib,0.621,0.1441,13,37.0842,20.888,vMost-DILI-Concern,True,Low,427.5,3.6,4.1,,1.0,Low
+Osimertinib,-1.7938,2.3578,31,6.1129,8.0405,vNo-DILI-Concern,False,,499.6,3.7,,,0.0,No Concern
+Oxaliplatin,-3.0887,5.0703,37,8.0287,10.0904,vMost-DILI-Concern,True,,397.29,,,,2.0,Moderate
+Paclitaxel,-24.9161,38.2855,10,-0.9652,5.2996,vLess-DILI-Concern,True,,853.9,2.5,,,2.0,Moderate
+Pacritinib,-0.4853,0.6633,31,15.4025,9.8897,vLess-DILI-Concern,True,,472.6,3.8,60.0,,2.0,Moderate
+Palbociclib,-2.0412,1.2056,31,-3.7123,6.4192,vLess-DILI-Concern,True,,447.5,1.8,,,2.0,Moderate
+Panobinostat,-0.1653,1.2995,24,37.6284,22.3742,vLess-DILI-Concern,True,Moderate,349.4,3.0,33.0,,2.0,Moderate
+Pemigatinib,-28.2845,71.3946,14,12.201,13.4022,vNo-DILI-Concern,False,,487.5,1.8,15.4,0.145,0.0,No Concern
+Pentostatin,-1.4337,5.7802,13,34.4171,22.0926,vMost-DILI-Concern,True,Moderate Risk,268.27,-2.1,5.7,0.0583,2.0,Moderate
+Pexidartinib,-19.8612,50.0252,19,7.1693,12.2071,vMost-DILI-Concern,True,Black Box Warning,417.8,4.5,25.8,0.073,4.0,High/Severe
+Pipobroman,-0.1674,4.2734,23,41.4466,29.9803,vLess-DILI-Concern,True,Moderate,356.05,0.4,,,2.0,Moderate
+Plerixafor,-8.5605,9.3296,13,1.1732,7.5411,vNo-DILI-Concern,False,No DILI concern,502.8,,4.0,,0.0,No Concern
+Plicamycin,0.0707,1.831,89,47.8343,20.8193,vMost-DILI-Concern,True,Severe,1085.1,0.6,7.0,,4.0,High/Severe
+Pomalidomide,-0.6954,0.3697,28,-4.5082,3.0162,vLess-DILI-Concern,True,Moderate,273.24,0.2,7.5,0.11,2.0,Moderate
+Ponatinib,-0.9055,1.0392,24,7.8765,11.587,vLess-DILI-Concern,True,High Risk - Black Box Warning,532.6,4.1,23.0,,4.0,High/Severe
+Pralatrexate,-0.5406,4.4224,32,29.4248,23.0717,Ambiguous DILI-concern,True,,477.5,-0.9,15.0,0.36,2.0,Moderate
+Raloxifene,-17.3962,31.5199,18,-1.4393,10.5082,vNo-DILI-Concern,False,,473.6,6.1,32.5,44.1,0.0,No Concern
+Regorafenib,-1.1836,1.2521,27,18.8187,10.8706,vMost-DILI-Concern,True,,482.8,4.2,,,2.0,Moderate
+Ribociclib,-5.6537,7.3164,15,7.6926,7.091,vLess-DILI-Concern,True,,434.5,2.2,,,2.0,Moderate
+Romidepsin,-1.8925,10.8975,24,39.9383,22.887,vNo-DILI-Concern,False,Low,540.7,2.2,3.0,4.5,1.0,Low
+Ruxolitinib,-0.7953,1.0871,28,-3.2596,2.7138,vLess-DILI-Concern,True,,306.4,2.1,3.0,0.29,2.0,Moderate
+Selinexor,-0.9579,2.6357,20,27.0905,20.3028,vNo-DILI-Concern,False,Low DILI Risk,443.3,3.0,6.0,0.256,1.0,Low
+Selpercatinib,-32.3754,61.2192,23,11.5041,14.5007,vNo-DILI-Concern,False,,525.6,2.5,32.0,0.086,0.0,No Concern
+Selumetinib,-0.7678,0.6712,26,-3.2762,3.8124,vLess-DILI-Concern,True,,457.7,3.6,7.5,0.225,2.0,Moderate
+Sirolimus,0.774,0.1205,4,14.2704,10.7022,vLess-DILI-Concern,True,,914.2,6.0,,,2.0,Moderate
+Sitaxentan,0.7564,0.1551,32,20.1744,13.2765,vMost-DILI-Concern,True,Severe,454.9,3.7,9.1,0.076,4.0,High/Severe
+Sorafenib,-5.9156,8.7526,27,21.3626,10.8313,vMost-DILI-Concern,True,,464.8,4.1,,,2.0,Moderate
+Sotorasib,-13.6418,17.6527,29,-1.3144,9.8173,vLess-DILI-Concern,True,LiverTox Category D,560.6,4.0,5.5,0.37,3.0,High/Severe
+Streptozocin,0.6444,0.003,2,13.9849,9.0152,Ambiguous DILI-concern,True,Moderate,265.22,-1.4,0.67,,2.0,Moderate
+Sunitinib,-2.1614,4.0441,30,-0.2937,6.726,vMost-DILI-Concern,True,,398.5,2.6,51.0,0.74,2.0,Moderate
+Talazoparib,-39.1215,117.5302,19,-1.6712,10.8736,vNo-DILI-Concern,False,,380.4,2.3,,,0.0,No Concern
+Tazemetostat,-11.17,45.0551,26,-2.7803,5.8519,vNo-DILI-Concern,False,Low,572.7,4.2,3.1,3.9,1.0,Low
+Temozolomide,-1.3883,4.5275,15,21.819,16.7911,vLess-DILI-Concern,True,"Low frequency (<1:10,000), high severity",194.15,-1.1,1.8,0.134,2.0,Moderate
+Temsirolimus,-18.0091,51.5546,21,2.2676,7.1349,vNo-DILI-Concern,False,,1030.3,5.6,,,0.0,No Concern
+Teniposide,-2.0697,5.7931,15,23.7474,20.9593,vLess-DILI-Concern,True,Low concern,656.7,1.2,5.0,0.02,1.0,Low
+Teriflunomide,0.709,0.1402,10,24.9557,15.5898,vLess-DILI-Concern,True,Moderate,270.21,3.3,456.0,0.0005,2.0,Moderate
+Thalidomide,-105.2816,206.3103,5,4.1605,8.0836,vLess-DILI-Concern,True,,258.23,0.3,,,2.0,Moderate
+Thioguanine,0.446,0.7704,13,35.226,22.3634,vLess-DILI-Concern,True,High,167.19,-0.1,1.33,0.329,3.0,High/Severe
+Thiotepa,-0.9903,5.1944,18,25.239,16.7987,vLess-DILI-Concern,True,,189.22,0.5,2.4,0.163,2.0,Moderate
+Tivozanib,-4.1292,6.6154,28,6.0327,11.0566,vNo-DILI-Concern,False,Moderate,454.9,4.0,111.0,0.011,2.0,Moderate
+Tolebrutinib,0.3496,1.2498,7,8.2198,7.4296,vMost-DILI-Concern,True,Severe,455.5,3.2,5.0,0.074,4.0,High/Severe
+Trametinib,-7.1576,18.2744,11,17.0036,15.4489,vLess-DILI-Concern,True,Low,615.4,3.4,96.0,0.07,1.0,Low
+Tretinoin,-4.8617,4.3008,26,-0.5097,6.6732,Ambiguous DILI-concern,True,Moderate,300.4,6.3,0.71,0.23,2.0,Moderate
+Triethylenemelamine,-0.5826,4.5286,12,42.6023,29.1267,vNo-DILI-Concern,False,,204.23,0.7,,,0.0,No Concern
+Trifluridine,-13.5822,23.3972,15,0.6839,5.8203,vNo-DILI-Concern,False,Low,296.2,-0.5,2.1,,1.0,Low
+Umbralisib,-70.8326,353.2708,27,-1.7857,7.2874,vLess-DILI-Concern,True,High risk - drug withdrawn,571.5,5.8,91.0,0.221,4.0,High/Severe
+Uracil mustard,-3.9481,4.4631,25,-2.8262,6.8152,Ambiguous DILI-concern,True,Not formally categorized - primary toxicity was hematologic,252.09,0.5,0.5,,1.0,Low
+Uridine triacetate,-11.5985,33.0557,31,-2.1368,7.7229,vNo-DILI-Concern,False,Low,370.31,-0.5,2.25,,1.0,Low
+Valrubicin,-3.3499,3.1881,20,-3.1,6.9554,vNo-DILI-Concern,False,Low,723.6,4.0,,,1.0,Low
+Vandetanib,-8.7373,18.6874,22,9.3513,11.0777,vNo-DILI-Concern,False,Low,475.4,4.9,456.0,13.2,1.0,Low
+Vemurafenib,-2.2247,3.5132,24,-3.4306,5.1873,vLess-DILI-Concern,True,Moderate,489.9,5.0,57.0,0.019,2.0,Moderate
+Venetoclax,-0.4294,0.5877,26,5.6236,7.5912,vNo-DILI-Concern,False,Moderate,868.4,8.2,26.0,0.13,2.0,Moderate
+Vincristine,0.3859,0.2236,25,32.1109,11.1593,vLess-DILI-Concern,True,,825.0,2.8,,,2.0,Moderate
+Vinorelbine tartrate,-29.6938,92.6421,28,3.9283,8.5604,vLess-DILI-Concern,True,Low,1079.1,,35.65,1.115,1.0,Low
+Vismodegib,-5.3394,4.2167,27,-2.4341,9.2472,vLess-DILI-Concern,True,,421.3,3.8,168.0,0.0011,2.0,Moderate
+Vorinostat,-2.0055,4.074,22,17.0551,10.7875,vNo-DILI-Concern,False,No-DILI-Concern per database,264.32,1.9,1.73,,0.0,No Concern
+Zanubrutinib,-8.77,23.4095,25,1.5556,7.9966,vNo-DILI-Concern,False,Low,471.5,3.5,3.0,2.88,1.0,Low
