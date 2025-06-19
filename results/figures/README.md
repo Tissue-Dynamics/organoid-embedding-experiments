@@ -1,29 +1,26 @@
 # Results Figures
 
-Clean, essential visualizations for the organoid DILI prediction analysis.
+Real scientific visualizations for the organoid DILI prediction analysis. 
+**No promotional/overview figures** - only actual data and method results.
 
 ## Directory Structure
 
-### `core/` - Key Results
-- `key_results_summary.png` - Main performance comparison
-- `event_aware_final_summary.png` - Event-aware feature results (if available)
-- `media_change_events_summary.png` - Media change event overview (if available)
+### `phase2/` - Phase 2 Embeddings (4 files)
+- `fourier_hierarchical_clusters.png` - Fourier embedding clusters  
+- `sax_hierarchical_clusters.png` - SAX embedding clusters
+- `catch22_hierarchical_clusters.png` - catch22 embedding clusters
+- `custom_hierarchical_clusters.png` - Custom feature embedding clusters
+- Shows actual wells → concentrations → drugs hierarchical clustering
 
-### `phase2/` - Phase 2 Embeddings
-- Hierarchical clustering visualizations for each embedding method
-- Shows wells → concentrations → drugs progression
+### `validation/` - Event Verification (4 files)
+- `plate_1_event_verification.png` - Actual time series with detected events
+- `plate_2_event_verification.png` - Actual time series with detected events  
+- `plate_3_event_verification.png` - Actual time series with detected events
+- `spike_characterization_detailed.png` - Detailed spike analysis plots
 
-### `validation/` - Event Verification  
-- `plate_*_event_verification.png` - Time series with detected events
-- `spike_characterization_detailed.png` - Detailed spike analysis
-- `event_timing_summary_all_plates.png` - Event timing overview
+## Guidelines
 
-## Regeneration
-
-To regenerate all figures:
-
-```bash
-python regenerate_figures.py
-```
-
-Individual modules can also be run directly from `src/` directory.
+- **Only real data visualizations** (time series, scatter plots, heatmaps)
+- **Method-specific results** (embedding plots, correlation matrices)  
+- **Validation plots** (event detection, model performance)
+- **No summary/overview figures** - they don't add value

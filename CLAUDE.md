@@ -46,7 +46,7 @@ python run_analysis.py
 - `src/features/event_aware_extraction.py` - Event-aware feature extraction  
 - `src/analysis/dili_correlation.py` - DILI correlation analysis
 - `results/data/hierarchical_embedding_results.joblib` - Phase 2 results
-- `results/figures/event_aware_final_summary.png` - Key findings
+- `results/figures/validation/` - Event verification plots
 
 ## Development Commands
 
@@ -57,3 +57,11 @@ uv pip install -r requirements.txt
 # Database connection
 export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
 ```
+
+## Important Guidelines
+
+**NEVER CREATE OVERVIEW/SUMMARY FIGURES** - They always suck and are not useful. Focus on:
+- Actual data visualizations (time series, scatter plots, heatmaps)
+- Method-specific results (embedding plots, correlation matrices)  
+- Validation plots (event detection, model performance)
+- Real scientific figures that show data, not promotional graphics
