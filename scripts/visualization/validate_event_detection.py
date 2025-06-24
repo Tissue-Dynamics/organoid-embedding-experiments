@@ -1,6 +1,38 @@
 #!/usr/bin/env python3
 """
-Validate event detection by overlaying detected events on actual time series data.
+Validate Media Change Event Detection
+
+PURPOSE:
+    Creates comprehensive visualizations to validate the accuracy of automated
+    media change event detection across multiple plates and conditions.
+    Essential for quality control of event-aware feature extraction.
+
+METHODOLOGY:
+    - Loads raw oxygen consumption time series from database
+    - Overlays detected media change events as vertical markers
+    - Creates multi-panel plots organized by plate and drug
+    - Highlights detection accuracy, false positives, and missed events
+    - Generates summary statistics for detection performance
+
+INPUTS:
+    - DATABASE_URL environment variable for database connection
+    - data/raw/event_data.parquet (from download_event_data.py)
+      Downloaded event table with media change timings
+    - Queries raw oxygen data for visualization
+
+OUTPUTS:
+    - results/figures/event_validation/plate_*_validation.png
+      Per-plate validation plots with multiple wells
+    - results/figures/event_validation/detection_summary.png
+      Overall detection performance statistics
+    - results/figures/event_validation/problematic_wells.png
+      Wells with poor detection for manual review
+    - Console output with validation metrics
+
+REQUIREMENTS:
+    - numpy, pandas, matplotlib, seaborn, duckdb
+    - Event data must be downloaded first
+    - Database connection for oxygen data
 """
 
 import pandas as pd

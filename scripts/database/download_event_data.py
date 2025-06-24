@@ -1,7 +1,31 @@
 #!/usr/bin/env python3
 """
-Download event data from Supabase and save locally for event-aware feature engineering.
-This script connects to the database and downloads the complete event_table for local analysis.
+Download Event Data from Database
+
+PURPOSE:
+    Downloads media change event data from the database for local analysis.
+    This creates a local cache of event timing information to enable
+    event-aware feature extraction without repeated database queries.
+
+METHODOLOGY:
+    - Connects to PostgreSQL database via DuckDB
+    - Queries event_table for all media change events
+    - Filters and cleans event data
+    - Saves as local Parquet file for efficient access
+
+INPUTS:
+    - DATABASE_URL environment variable with connection string
+    - Queries event_table from the database
+
+OUTPUTS:
+    - data/raw/event_data.parquet
+      Complete event table with timing and metadata
+    - Console output with download statistics
+
+REQUIREMENTS:
+    - pandas, duckdb, python-dotenv
+    - Valid database connection credentials
+    - Write access to data/raw directory
 """
 
 import os

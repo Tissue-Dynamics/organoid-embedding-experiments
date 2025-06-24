@@ -2,30 +2,30 @@
 
 ## Project Overview
 
-Clean, refactored organoid DILI prediction codebase. This project analyzes liver organoid oxygen consumption patterns to predict drug-induced liver injury (DILI) risk.
-
-## Key Results
-
-- **Phase 2 Hierarchical Embeddings**: r=0.260 correlation with DILI
-- **Event-Aware Features**: r=0.435 correlation with DILI (67% improvement)
-- **Best Predictors**: Consumption ratio and temporal progression features
-
+Clean, refactored organoid DILI prediction codebase. This project analyzes liver organoid oxygen consumption patterns to predict drug-induced liver injury (DILI) risk and other downstream properties. It also works on a diffusion model to interpolate missing data points or concentrations.
 ## Project Structure
 
 ```
-├── src/                    # Core analysis modules
-│   ├── analysis/          # DILI correlation and prediction
-│   ├── features/          # Feature extraction (event-aware, embeddings)
-│   ├── visualization/     # Plotting and validation
-│   └── utils/            # Utilities
+├── src/                    # Reusable modules and libraries
+│   └── utils/             # Utility functions (data loading, etc.)
+├── scripts/                # Executable scripts (run these!)
+│   ├── analysis/          # DILI correlation and prediction scripts
+│   ├── features/          # Feature extraction scripts
+│   ├── visualization/     # Plotting and validation scripts
+│   ├── database/          # Database interaction scripts
+│   └── experiments/       # Experimental analysis scripts
 ├── results/              # Generated outputs
 │   ├── data/            # Processed datasets and models
-│   └── figures/         # Key visualizations
+│   └── figures/         # Visualizations
+├── embeddings/           # Embedding method implementations
 ├── config/              # Configuration files
-├── tests/               # Unit tests
-└── run_analysis.py      # Main analysis runner
+└── tests/               # Unit tests
 
 ```
+
+**Key distinction**:
+- `src/` = Import from here (reusable modules, utilities, classes)
+- `scripts/` = Run these (executable analysis scripts with main blocks)
 
 ## Usage
 
@@ -36,17 +36,18 @@ uv pip install -r requirements.txt
 # Set database credentials
 export DATABASE_URL="postgresql://..."
 
-# Run complete analysis
-python run_analysis.py
+# Run feature extraction
+python scripts/features/event_aware_extraction.py
+python scripts/features/multi_timescale_catch22.py
+python scripts/features/dose_response_normalization.py
+
+# Run analysis
+python scripts/analysis/dili_correlation.py
+python scripts/analysis/enhanced_dili_prediction.py
+
+# Create visualizations
+python scripts/visualization/event_verification.py
 ```
-
-## Key Files
-
-- `src/analysis/phase2_embeddings.py` - Hierarchical drug embeddings
-- `src/features/event_aware_extraction.py` - Event-aware feature extraction  
-- `src/analysis/dili_correlation.py` - DILI correlation analysis
-- `results/data/hierarchical_embedding_results.joblib` - Phase 2 results
-- `results/figures/validation/` - Event verification plots
 
 ## Development Commands
 
@@ -60,8 +61,28 @@ export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe
 
 ## Important Guidelines
 
+**ALWAYS USE UV FOR PACKAGE MANAGEMENT** - This is critical:
+- **Installing packages**: `uv pip install package-name` (NOT `pip install`)
+- **Installing requirements**: `uv pip install -r requirements.txt`
+- **Running Python scripts**: Just use `python script.py` (uv manages the environment)
+- **Checking installed packages**: `uv pip list`
+- **Why uv**: It's much faster than pip and handles dependencies better
+- The project uses a `.venv` managed by uv - never use pip directly
+
 **NEVER CREATE OVERVIEW/SUMMARY FIGURES** - They always suck and are not useful. Focus on:
 - Actual data visualizations (time series, scatter plots, heatmaps)
-- Method-specific results (embedding plots, correlation matrices)  
+- Method-specific results (embedding plots, correlation matrices)
 - Validation plots (event detection, model performance)
 - Real scientific figures that show data, not promotional graphics
+
+**DO NOT MENTION "IMPROVEMENT OVER BASELINE"** - We are still in exploration phase:
+- Avoid comparing to previous results as "improvements"
+- Don't claim X% better performance
+- Focus on absolute metrics and findings
+- This is research exploration, not optimization
+
+**ALWAYS GENERATE VERIFICATION FIGURES IN THE SAME SCRIPT** - Every script must produce its own figures:
+- Never create separate visualization scripts
+- Include all visualizations directly in the feature extraction/analysis script
+- This ensures immediate verification of results
+- If a script doesn't produce figures, it cannot be verified and should be deleted

@@ -43,32 +43,32 @@ An autoencoder provides immediate value for quality control, pattern detection, 
 class ExperimentalEventAwareAutoencoder:
     """
     Multi-channel autoencoder for experimental oxygen consumption data
-    
+
     Input shape: [T, 7] channels:
     - oxygen_values: O₂ consumption measurements
-    - mask: 0=missing data, 1=valid data  
+    - mask: 0=missing data, 1=valid data
     - media_change_flag: 1 at media change timepoints
     - dosing_flag: 1 at dosing timepoint
     - phase_indicators: [pre_dosing, early, sustained, late] one-hot [4D]
-    
+
     Output: 16-dimensional embedding capturing experimental patterns
     """
-    
+
     def __init__(self, latent_dim=16):
         # Encoder: 1D convolutions for temporal patterns
         self.encoder = nn.Sequential(
             # Block 1: Initial feature extraction
             nn.Conv1d(7, 64, kernel_size=7, padding=3),
             nn.ReLU(), nn.BatchNorm1d(64), nn.Dropout(0.1),
-            
+
             # Block 2: Downsample + increase channels
             nn.Conv1d(64, 128, kernel_size=5, stride=2, padding=2),
             nn.ReLU(), nn.BatchNorm1d(128), nn.Dropout(0.1),
-            
+
             # Block 3: Further compression
             nn.Conv1d(128, 256, kernel_size=3, stride=2, padding=1),
             nn.ReLU(), nn.BatchNorm1d(256), nn.Dropout(0.1),
-            
+
             # Global pooling + dense layers
             nn.AdaptiveAvgPool1d(1),
             nn.Flatten(),
@@ -76,37 +76,37 @@ class ExperimentalEventAwareAutoencoder:
             nn.ReLU(),
             nn.Linear(128, latent_dim)
         )
-        
+
         # Decoder: Mirror architecture with upsampling
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 128),
             nn.ReLU(),
             nn.Linear(128, 256),
             nn.Unflatten(1, (256, 1)),
-            
+
             # Transpose convolutions for upsampling
             nn.ConvTranspose1d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(), nn.BatchNorm1d(128),
-            
+
             nn.ConvTranspose1d(128, 64, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.ReLU(), nn.BatchNorm1d(64),
-            
+
             # Final reconstruction (only oxygen channel)
             nn.Conv1d(64, 1, kernel_size=7, padding=3)
         )
-    
+
     def encode(self, x):
         return self.encoder(x.transpose(1, 2))  # [batch, channels, time]
-    
+
     def decode(self, z, original_length):
         decoded = self.decoder(z)
         # Resize to match original length and apply mask
         return F.interpolate(decoded, size=original_length, mode='linear')
-    
+
     def forward(self, x, mask):
         z = self.encode(x)
         recon = self.decode(z, x.shape[1])
-        
+
         # Apply mask to ignore missing data in loss
         masked_recon = recon * mask.unsqueeze(1)
         return masked_recon, z
@@ -114,8 +114,8 @@ class ExperimentalEventAwareAutoencoder:
     def quality_score(self, x, mask):
         """Calculate reconstruction error for quality assessment"""
         recon, _ = self.forward(x, mask)
-        mse = F.mse_loss(recon * mask.unsqueeze(1), 
-                        x[:, :, 0:1] * mask.unsqueeze(1), 
+        mse = F.mse_loss(recon * mask.unsqueeze(1),
+                        x[:, :, 0:1] * mask.unsqueeze(1),
                         reduction='none')
         return mse.mean(dim=(1, 2))  # Per-sample error
 ```
@@ -130,25 +130,25 @@ class MultiResolutionExperimentalAE:
     def __init__(self):
         # Short-term: 6h windows around events
         self.short_ae = ExperimentalEventAwareAutoencoder(latent_dim=8)
-        
-        # Long-term: Full experiment timeline  
+
+        # Long-term: Full experiment timeline
         self.long_ae = ExperimentalEventAwareAutoencoder(latent_dim=16)
-        
+
         # Fusion layer
         self.fusion = nn.Linear(8 + 16, 16)
-    
+
     def encode(self, full_timeseries, event_windows):
         # Encode full experiment
         long_embedding = self.long_ae.encode(full_timeseries)
-        
+
         # Encode each event window and average
         short_embeddings = []
         for window in event_windows:
             short_emb = self.short_ae.encode(window)
             short_embeddings.append(short_emb)
-        
+
         avg_short = torch.stack(short_embeddings).mean(dim=0)
-        
+
         # Combine multi-resolution embeddings
         combined = torch.cat([avg_short, long_embedding], dim=-1)
         return self.fusion(combined)
@@ -156,42 +156,42 @@ class MultiResolutionExperimentalAE:
 class ExperimentalBetaVAE(ExperimentalEventAwareAutoencoder):
     """
     Disentangled representation learning for experimental factors
-    
+
     Expected disentangled factors:
     - Dims 0-3: Baseline consumption patterns
-    - Dims 4-7: Media change response characteristics  
+    - Dims 4-7: Media change response characteristics
     - Dims 8-11: Dose-response sensitivity
     - Dims 12-15: Temporal dynamics (adaptation, recovery)
     """
     def __init__(self, latent_dim=16, beta=4.0):
         super().__init__(latent_dim)
         self.beta = beta
-        
+
         # VAE-specific layers
         self.mu_layer = nn.Linear(128, latent_dim)
         self.logvar_layer = nn.Linear(128, latent_dim)
-    
+
     def encode(self, x):
         h = self.encoder[:-1](x.transpose(1, 2))  # Stop before final linear
         mu = self.mu_layer(h)
         logvar = self.logvar_layer(h)
         return mu, logvar
-    
+
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return mu + eps * std
-    
+
     def loss(self, recon, original, mu, logvar, mask):
         # Reconstruction loss (masked)
         recon_loss = F.mse_loss(
-            recon * mask.unsqueeze(1), 
+            recon * mask.unsqueeze(1),
             original[:, :, 0:1] * mask.unsqueeze(1)
         )
-        
+
         # KL divergence loss
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        
+
         return recon_loss + self.beta * kl_loss
 ```
 
@@ -210,39 +210,39 @@ Diffusion models excel at learning complex data distributions, but must be adapt
 class EventAwareOxygenDiffusionModel:
     """
     Conditional diffusion model for oxygen consumption curves with experimental events
-    
+
     Inputs:
     - concentration: log₁₀(μM) [-3.5 to 3.5] (ESSENTIAL for 10⁶ fold range)
-    - time_relative: hours since dosing [0 to 300h] 
+    - time_relative: hours since dosing [0 to 300h]
     - time_absolute: hours from experiment start [0 to 400h]
     - media_change_times: list of media change timestamps
     - drug_embedding: molecular descriptors/fingerprints [256D]
     - plate_context: experimental conditions + control well behavior [32D]
     - phase_indicator: [pre_dosing, early_response, sustained, late] one-hot [4D]
-    
+
     Output:
     - oxygen_consumption: predicted O₂ level [-27 to 120 range, from actual data]
     """
-    
+
     def __init__(self):
         # Event-aware temporal encoder (handles media changes explicitly)
         self.event_encoder = EventTransformerEncoder(
             d_model=256, n_heads=8, n_layers=6,
             event_types=['dosing', 'media_change', 'measurement_artifact']
         )
-        
+
         # Log-concentration embedding (critical for dose-response)
         self.conc_encoder = MLP([1, 64, 128, 256])
-        
-        # Drug molecular embedding 
+
+        # Drug molecular embedding
         self.drug_encoder = MLP([256, 512, 256])
-        
+
         # Plate/control context (captures control well dynamics)
         self.plate_encoder = MLP([32, 128, 256])
-        
+
         # Phase-specific dynamics (pre-dosing vs post-dosing behavior)
         self.phase_encoder = MLP([4, 64, 128])
-        
+
         # Diffusion denoising network with event attention
         self.denoiser = EventAwareUNet1D(
             in_channels=1,  # O₂ values
@@ -280,84 +280,84 @@ class EventAwareOxygenDiffusionModel:
 #### Inference Process
 
 ```python
-def interpolate_event_aware_oxygen_curve(model, drug_embedding, concentration_range, 
+def interpolate_event_aware_oxygen_curve(model, drug_embedding, concentration_range,
                                        experiment_timeline, plate_controls):
     """
     Generate complete O₂ curve respecting experimental structure
-    
+
     Args:
         drug_embedding: [256] molecular descriptors
         concentration_range: [N] concentrations in log₁₀ μM
         experiment_timeline: dict with dosing_time, media_changes, duration
         plate_controls: [T] control well oxygen trajectory for normalization
-    
+
     Returns:
         oxygen_curves: [N, T] predicted O₂ consumption matrix
         uncertainty: [N, T] prediction uncertainty (from 4-replicate structure)
     """
-    
+
     # Extract experimental structure
     dosing_time = experiment_timeline['dosing_time']  # e.g., 48h
     media_changes = experiment_timeline['media_changes']  # e.g., [72h, 120h, 168h]
     total_duration = experiment_timeline['duration']  # e.g., 336h
-    
+
     # Create phase indicators
     time_points = torch.arange(0, total_duration, 1.6)  # 1.6h sampling
     phase_indicators = create_phase_indicators(time_points, dosing_time, media_changes)
-    
+
     # Create conditioning tensors
     conc_embed = model.conc_encoder(concentration_range)
     drug_embed = model.drug_encoder(drug_embedding)
     plate_embed = model.plate_encoder(plate_controls)
     phase_embed = model.phase_encoder(phase_indicators)
-    
+
     # Event-aware temporal embedding
     event_context = model.event_encoder(time_points, media_changes, dosing_time)
-    
+
     # Sample from diffusion model with replicate-based uncertainty
     curves = []
     for replicate in range(4):  # Generate 4 replicates
         noise = torch.randn(len(concentration_range), len(time_points))
-        
+
         # Iterative denoising with event awareness
         for t in reversed(range(model.num_timesteps)):
             # Combine all conditioning
             condition = torch.cat([
-                conc_embed, 
+                conc_embed,
                 drug_embed.expand(len(concentration_range), -1),
                 plate_embed.expand(len(concentration_range), -1),
                 event_context,
                 phase_embed
             ], dim=-1)
-            
+
             # Event-aware denoise step
             noise = model.event_aware_denoise_step(
                 noise, t, condition, media_changes, dosing_time
             )
-        
+
         curves.append(noise)
-    
+
     # Aggregate replicates
     curves = torch.stack(curves)  # [4, N, T]
     mean_curve = curves.mean(dim=0)  # [N, T]
     uncertainty = curves.std(dim=0)  # [N, T] - replicate-based uncertainty
-    
+
     return mean_curve, uncertainty
 
 def create_phase_indicators(time_points, dosing_time, media_changes):
     """Create phase indicators for pre-dosing, early, sustained, late response"""
     phases = torch.zeros(len(time_points), 4)  # one-hot encoding
-    
+
     for i, t in enumerate(time_points):
         if t < dosing_time:
             phases[i, 0] = 1  # pre_dosing
         elif t < dosing_time + 72:  # 3 days post-dosing
-            phases[i, 1] = 1  # early_response  
+            phases[i, 1] = 1  # early_response
         elif t < dosing_time + 240:  # 10 days post-dosing
             phases[i, 2] = 1  # sustained
         else:
             phases[i, 3] = 1  # late
-    
+
     return phases
 ```
 
@@ -370,24 +370,24 @@ class EventDrivenOxygenODE:
     """
     Learn event-aware oxygen dynamics with interpretable parameters
     """
-    
+
     def __init__(self):
         # Base physiological parameters (pre-dosing)
         self.baseline_network = MLP([1, 32, 64, 2])  # → [baseline_consumption, adaptation_rate]
-        
-        # Concentration-dependent toxicity parameters  
+
+        # Concentration-dependent toxicity parameters
         self.toxicity_network = MLP([1, 64, 128, 3])  # → [EC50, Emax, hill_slope]
-        
+
         # Drug-specific parameter modulation
         self.drug_modulator = MLP([256, 128, 8])  # molecular → all rate modifiers
-        
+
         # Media change response parameters
         self.media_response_network = MLP([2, 32, 64, 2])  # [time_since_media, conc] → [spike_mag, recovery_rate]
-    
+
     def ode_func(self, t, y, concentration, drug_embedding, media_change_times, dosing_time):
         """
         dy/dt = f(y, concentration, drug_properties, t, events)
-        
+
         Incorporates:
         - Pre-dosing baseline dynamics
         - Concentration-dependent toxicity (Hill curves)
@@ -395,37 +395,37 @@ class EventDrivenOxygenODE:
         - Drug-specific parameter modulation
         """
         log_conc = torch.log10(torch.clamp(concentration, 1e-6, 1e6))
-        
+
         # Determine current phase
         if t < dosing_time:
             # Pre-dosing: only baseline dynamics
             baseline_params = self.baseline_network(torch.tensor([0.0]))  # No concentration
             baseline_consumption, adaptation_rate = baseline_params
-            
+
             dydt = -baseline_consumption + adaptation_rate * (5.0 - y)  # Adapt toward 5 μM baseline
-            
+
         else:
             # Post-dosing: full dynamics
-            
+
             # 1. Baseline consumption
             baseline_params = self.baseline_network(log_conc)
             baseline_consumption, _ = baseline_params
-            
+
             # 2. Concentration-dependent toxicity (Hill equation in rate space)
             tox_params = self.toxicity_network(log_conc)
             EC50, Emax, hill_slope = tox_params
-            
+
             # Hill equation for toxicity rate
             tox_rate = Emax * (concentration ** hill_slope) / (EC50 ** hill_slope + concentration ** hill_slope)
-            
+
             # 3. Drug-specific modulation
             drug_effects = self.drug_modulator(drug_embedding)
             baseline_mod, tox_mod, recovery_mod = drug_effects[:3], drug_effects[3:6], drug_effects[6:]
-            
+
             # Apply drug modulation
             baseline_consumption = baseline_consumption * (1 + baseline_mod.mean())
             tox_rate = tox_rate * (1 + tox_mod.mean())
-            
+
             # 4. Media change artifacts
             media_effect = 0.0
             for media_time in media_change_times:
@@ -435,42 +435,42 @@ class EventDrivenOxygenODE:
                         torch.tensor([time_since_media, log_conc])
                     )
                     spike_magnitude, recovery_rate = media_params
-                    
+
                     # Exponential decay from spike
                     media_effect += spike_magnitude * torch.exp(-recovery_rate * time_since_media)
-            
+
             # Combined dynamics
             dydt = (
                 -baseline_consumption * (1 + 0.1 * y)  # Baseline consumption
-                - tox_rate * y                          # Toxicity-induced consumption  
+                - tox_rate * y                          # Toxicity-induced consumption
                 + media_effect                          # Media change artifacts
                 + 0.01 * (5.0 - y)                     # Slow recovery toward baseline
             )
-        
+
         return dydt
-    
+
     def get_hill_parameters(self, drug_embedding, feature='oxygen_consumption'):
         """
         Extract Hill curve parameters for dose-response analysis
         Compatible with existing Hill curve fitting approach
         """
         concentrations = torch.logspace(-3.5, 3.5, 100)  # 0.0003 to 3333 μM
-        
+
         responses = []
         for conc in concentrations:
             # Simulate to steady state (no media changes, post-dosing)
             steady_state = self.solve_to_steady_state(
-                concentration=conc, 
+                concentration=conc,
                 drug_embedding=drug_embedding,
                 phase='post_dosing'
             )
             responses.append(steady_state)
-        
+
         responses = torch.stack(responses)
-        
+
         # Fit Hill equation to extract EC50, Emax, etc.
         hill_params = fit_hill_curve(concentrations, responses)
-        
+
         return hill_params
 ```
 
@@ -483,34 +483,34 @@ class PhysicsInformedOxygenModel:
     """
     Incorporate known biological constraints
     """
-    
+
     def __init__(self):
         self.base_consumption = 5.0  # Baseline O₂ consumption (μM/h)
         self.max_consumption = 50.0  # Maximum possible consumption
-        
+
         # Neural network predicts deviations from physics
         self.deviation_net = ConditionalTransformer()
-    
+
     def forward(self, concentration, time, drug_embedding):
         # Physics-based baseline
         baseline_curve = self.michaelis_menten_dynamics(concentration, time)
-        
+
         # Neural correction
         deviation = self.deviation_net(concentration, time, drug_embedding)
-        
+
         # Constrained output
         return torch.clamp(baseline_curve + deviation, -50, 150)
-    
+
     def michaelis_menten_dynamics(self, concentration, time):
         """Simple Michaelis-Menten-like consumption model"""
         V_max = self.max_consumption
         K_m = 1.0  # Half-saturation concentration
-        
+
         rate = V_max * concentration / (K_m + concentration)
-        
+
         # Integrate over time with media change artifacts
         consumption = self.integrate_with_media_changes(rate, time)
-        
+
         return consumption
 ```
 
@@ -539,7 +539,7 @@ class PhysicsInformedOxygenModel:
    - Return list of media change timestamps per plate
 
 4. **Dosing time detection**
-   - Create `detect_dosing_time()` function 
+   - Create `detect_dosing_time()` function
    - Find timepoint where treatment wells diverge from controls (typically 24-48h)
    - Use variance increase + trajectory divergence metrics
 
@@ -568,7 +568,7 @@ def detect_events(plate_data):
 1. **Resampling to regular grid**
    - Create `resample_to_hourly()` function
    - Convert irregular ~1.6h sampling to 1h grid
-   - Use linear interpolation for missing timepoints
+   - Use loess smoothing (or something similar) for interpolation for missing timepoints
    - Pad/truncate to standard length (e.g., 336h = 2 weeks)
 
 2. **Multi-channel tensor creation**
@@ -576,7 +576,7 @@ def detect_events(plate_data):
    - Channel 0: oxygen_values (normalized to [-1, 1] range)
    - Channel 1: mask (1=valid data, 0=missing/interpolated)
    - Channel 2: media_change_flag (1 at media change times, 0 elsewhere)
-   - Channel 3: dosing_flag (1 at dosing time, 0 elsewhere)  
+   - Channel 3: dosing_flag (1 at dosing time, 0 elsewhere)
    - Channels 4-7: phase_indicators (one-hot: pre_dosing, early, sustained, late)
 
 3. **Control normalization**
@@ -590,7 +590,7 @@ def create_multichannel_input(well_data, events, controls):
     """Convert single well timeseries to [T, 7] tensor"""
     # Resample to 1h grid
     # Create mask channel
-    # Add event flags  
+    # Add event flags
     # Add phase indicators
     # Return tensor [time_points, 7_channels]
     pass
@@ -622,14 +622,14 @@ def create_multichannel_input(well_data, events, controls):
 def train_autoencoder(model, train_loader, val_loader, epochs=50):
     """Training loop for autoencoder"""
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    
+
     for epoch in range(epochs):
         # Training phase
         for batch in train_loader:
             # Forward pass, loss calculation, backprop
             pass
-        
-        # Validation phase 
+
+        # Validation phase
         # Early stopping if val loss stops improving
         pass
 ```
@@ -640,7 +640,7 @@ def train_autoencoder(model, train_loader, val_loader, epochs=50):
 
 **Tasks**:
 1. **Dataset class creation**
-   - Create `OxygenDataset(torch.utils.data.Dataset)` 
+   - Create `OxygenDataset(torch.utils.data.Dataset)`
    - Load all wells, apply filtering, format as tensors
    - Return (multichannel_input, mask) pairs
 
@@ -663,7 +663,7 @@ class OxygenDataset(Dataset):
         self.wells = load_oxygen_data()
         self.events = detect_events(self.wells)
         # Format as tensors
-        
+
     def __getitem__(self, idx):
         # Return (input_tensor, mask) for one well
         pass
@@ -717,7 +717,7 @@ def validate_outlier_detection(model, dataset):
    - Extract 6h windows around each media change
    - Handle variable numbers of media changes per experiment
 
-2. **Multi-resolution model implementation** 
+2. **Multi-resolution model implementation**
    - Implement `MultiResolutionExperimentalAE` from proposal
    - Train separate autoencoders for 6h windows vs full experiments
    - Combine 8D + 16D embeddings via fusion layer
@@ -755,7 +755,7 @@ def validate_outlier_detection(model, dataset):
 **Tasks**:
 1. **Hierarchical embedding creation**
    - Well-level: 16D embeddings from trained autoencoder
-   - Concentration-level: Average across 4 replicates  
+   - Concentration-level: Average across 4 replicates
    - Drug-level: Aggregate across concentrations
 
 2. **Conditioning vector preparation**
@@ -824,14 +824,14 @@ def validate_outlier_detection(model, dataset):
    - Control well normalization
    - Phase-appropriate dynamics (pre vs post-dosing)
 
-3. **Quality assessment with experimental context**: 
+3. **Quality assessment with experimental context**:
    - Identify anomalous measurements relative to plate controls
    - Detect wells that violate expected dose-response patterns
    - Flag inconsistent replicate behavior
 
 ### Future Applications with Experimental Constraints
 
-1. **Virtual screening with experimental realism**: 
+1. **Virtual screening with experimental realism**:
    - Predict complete oxygen curves including media change responses
    - Generate realistic experimental timelines with dosing/media change timing
    - Provide uncertainty estimates based on 4-replicate structure
@@ -887,7 +887,7 @@ def validate_outlier_detection(model, dataset):
 This proposal **must** incorporate the experimental nuances identified in O2_REALTIME_DATA.md:
 
 1. **Event-driven modeling**: Media changes are not noise but informative experimental events
-2. **Control-aware normalization**: All predictions must be referenced to plate control behavior  
+2. **Control-aware normalization**: All predictions must be referenced to plate control behavior
 3. **Phase-specific dynamics**: Pre-dosing vs post-dosing require different model behaviors
 4. **Log-concentration scaling**: Essential for the 10⁶-fold concentration range (0.0003-3333 μM)
 5. **Replicate structure**: Must generate 4 replicates with realistic inter-replicate variance

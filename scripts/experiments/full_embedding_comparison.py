@@ -1,5 +1,43 @@
 #!/usr/bin/env python3
-"""Complete embedding method comparison for organoid time series."""
+"""
+Comprehensive Embedding Method Comparison
+
+PURPOSE:
+    Systematically compares multiple time series embedding methods on organoid
+    oxygen consumption data. Evaluates embeddings based on clustering quality,
+    drug mechanism separation, and computational efficiency.
+
+METHODOLOGY:
+    Tests multiple embedding approaches:
+    - Traditional: catch22, tsfresh, SAX
+    - Deep Learning: VAE, Transformer autoencoders
+    - Statistical: ROCKET, Signature methods
+    
+    Evaluation metrics:
+    - Clustering quality: Silhouette score, Davies-Bouldin, Calinski-Harabasz
+    - Drug mechanism separation: Known drug class clustering
+    - Computational performance: Runtime and memory usage
+    - DILI correlation: Predictive power for hepatotoxicity
+
+INPUTS:
+    - Database connection via DATABASE_URL environment variable
+    - Queries oxygen consumption time series data
+    - Drug metadata including mechanism classes
+
+OUTPUTS:
+    - results/embeddings/comparison_results.csv
+      Comprehensive metrics for all embedding methods
+    - results/figures/embedding_comparison_matrix.png
+      Visual comparison of all methods across metrics
+    - results/figures/embedding_umap_grid.png
+      UMAP visualizations for each embedding method
+    - Console output with performance summary
+
+REQUIREMENTS:
+    - numpy, pandas, sklearn, matplotlib, seaborn
+    - Embedding implementations in embeddings/ directory
+    - Database connection with time series data
+"""
 
 import logging
 from pathlib import Path
