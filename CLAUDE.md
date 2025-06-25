@@ -2,7 +2,23 @@
 
 ## Project Overview
 
-Clean, refactored organoid DILI prediction codebase. This project analyzes liver organoid oxygen consumption patterns to predict drug-induced liver injury (DILI) risk and other downstream properties. It also works on a diffusion model to interpolate missing data points or concentrations.
+Clean, refactored organoid DILI prediction codebase. This project analyzes liver organoid oxygen consumption patterns to predict drug-induced liver injury (DILI) risk.
+
+## Key Results (Latest Analysis)
+
+- **Dynamic Variability Features**: r=0.473 correlation with DILI likelihood (p=0.003)
+- **Event-Normalized Features**: r=0.477 on 34 drugs, AUROC=0.832
+- **Best Predictors**: Rolling variance features (`rolling_50_mean_std_std`)
+- **Key Insight**: Drug-induced liver injury manifests as increased variability in oxygen consumption patterns
+
+## Lessons Learned
+
+See `docs/COMPREHENSIVE_DILI_ANALYSIS_LESSONS_LEARNED.md` for detailed documentation of:
+- Feature engineering discoveries (dynamic variability > central tendency)
+- Technical best practices (modular design, robust error handling)
+- Experimental design insights (plate effects, randomization issues)
+- Future recommendations (expand rolling variance analysis)
+
 ## Project Structure
 
 ```
@@ -17,6 +33,8 @@ Clean, refactored organoid DILI prediction codebase. This project analyzes liver
 ├── results/              # Generated outputs
 │   ├── data/            # Processed datasets and models
 │   └── figures/         # Visualizations
+├── archived/             # Previous analysis iterations
+├── docs/                # Documentation and guides
 ├── embeddings/           # Embedding method implementations
 ├── config/              # Configuration files
 └── tests/               # Unit tests

@@ -41,4 +41,6 @@ uv.lock
 # Experiment outputs
 experiments/outputs/
 experiments/results/
-EOF < /dev/null
+
+# Archived analysis iterations
+archived/
