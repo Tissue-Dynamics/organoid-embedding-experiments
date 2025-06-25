@@ -1,8 +1,0 @@
-Metric,Original,Improved,Change
-Event Detection Accuracy,64%,82%,+18 pp
-Timing Error (hours),±2.1,±1.5,-0.6h
-Total Events Detected,25,45,+20
-Missing Events Recovered,0,20,+20
-High Confidence Events (%),100%,82%,-18 pp
-Estimated Feature Quality Gain (%),Baseline,+64.6%,+64.6%
-Projected DILI Correlation,r = 0.435,r = 0.716,+0.281
