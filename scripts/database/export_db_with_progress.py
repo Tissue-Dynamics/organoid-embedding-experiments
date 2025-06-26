@@ -124,10 +124,23 @@ def export_with_progress():
                 
                 # Create table structure
                 print("Creating table structure...", end=' ', flush=True)
-                schema_query = "SELECT * FROM db.public.processed_data LIMIT 1"
-                schema_df = loader._execute_and_convert(schema_query)
-                empty_df = schema_df.iloc[0:0].copy()
-                local_conn.execute("CREATE TABLE processed_data AS SELECT * FROM empty_df")
+                # Create table with explicit schema to avoid type issues
+                create_table_query = """
+                    CREATE TABLE processed_data (
+                        id BIGINT,
+                        plate_id VARCHAR,
+                        well_number SMALLINT,
+                        timestamp TIMESTAMP WITH TIME ZONE,
+                        median_o2 FLOAT,
+                        cycle_time_stamp TIMESTAMP WITH TIME ZONE,
+                        cycle_num SMALLINT,
+                        is_excluded BOOLEAN,
+                        exclusion_reason INTEGER,
+                        excluded_by INTEGER,
+                        excluded_at TIMESTAMP WITH TIME ZONE
+                    )
+                """
+                local_conn.execute(create_table_query)
                 print("✓")
                 
                 # Export each plate with progress
