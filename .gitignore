@@ -20,6 +20,7 @@ venv/
 .DS_Store
 
 # Data and logs
+data/
 *.log
 # Don't ignore CSV files in results directory
 *.csv
