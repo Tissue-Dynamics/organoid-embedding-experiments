@@ -172,8 +172,8 @@ def export_with_progress():
                     print("✗ No data to export")
                     exported_rows = 0
                 else:
-                    # Export in chunks - balance between speed and progress updates
-                    chunk_size = 20000  # 20K rows per chunk - reduce network round-trips
+                    # Export in chunks - smaller chunks for SSL stability
+                    chunk_size = 5000  # 5K rows per chunk - more stable for SSL connections
                     total_chunks = (total_rows + chunk_size - 1) // chunk_size  # Ceiling division
                     
                     print(f"\nExporting {total_rows:,} rows in {total_chunks} chunks of {chunk_size:,}...")
@@ -184,50 +184,62 @@ def export_with_progress():
                     for chunk_num in range(total_chunks):
                         offset = chunk_num * chunk_size
                         
-                        try:
-                            chunk_start = time.time()
-                            
-                            # Optimized query - no COALESCE, use UUID directly, simple filtering
-                            chunk_query = f"""
-                                SELECT 
-                                    id,
-                                    plate_id,
-                                    well_number,
-                                    timestamp,
-                                    median_o2,
-                                    cycle_time_stamp,
-                                    cycle_num,
-                                    is_excluded,
-                                    exclusion_reason,
-                                    excluded_by,
-                                    excluded_at
-                                FROM db.public.processed_data 
-                                WHERE is_excluded = false
-                                ORDER BY id
-                                LIMIT {chunk_size} OFFSET {offset}
-                            """
-                            
-                            chunk_df = loader._execute_and_convert(chunk_query)
-                            chunk_rows = len(chunk_df)
-                            
-                            if chunk_rows > 0:
-                                # Insert into local database
-                                local_conn.execute("INSERT INTO processed_data SELECT * FROM chunk_df")
-                                exported_rows += chunk_rows
+                        # Retry logic for SSL/connection errors
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                chunk_start = time.time()
                                 
-                                elapsed = time.time() - chunk_start
-                                progress_bar = format_progress_bar(chunk_num + 1, total_chunks)
+                                # Optimized query - no COALESCE, use UUID directly, simple filtering
+                                chunk_query = f"""
+                                    SELECT 
+                                        id,
+                                        plate_id,
+                                        well_number,
+                                        timestamp,
+                                        median_o2,
+                                        cycle_time_stamp,
+                                        cycle_num,
+                                        is_excluded,
+                                        exclusion_reason,
+                                        excluded_by,
+                                        excluded_at
+                                    FROM db.public.processed_data 
+                                    WHERE is_excluded = false
+                                    ORDER BY id
+                                    LIMIT {chunk_size} OFFSET {offset}
+                                """
                                 
-                                print(f"  {progress_bar} Chunk {chunk_num+1}/{total_chunks}: {chunk_rows:,} rows ({elapsed:.1f}s) - Total: {exported_rows:,}")
-                            
-                            # Minimal cleanup (skip aggressive gc.collect())
-                            del chunk_df
+                                chunk_df = loader._execute_and_convert(chunk_query)
+                                chunk_rows = len(chunk_df)
                                 
-                        except Exception as e:
-                            print(f"  Chunk {chunk_num+1}/{total_chunks}: ✗ ERROR: {e}")
-                            import gc
-                            gc.collect()
-                            continue
+                                if chunk_rows > 0:
+                                    # Insert into local database
+                                    local_conn.execute("INSERT INTO processed_data SELECT * FROM chunk_df")
+                                    exported_rows += chunk_rows
+                                    
+                                    elapsed = time.time() - chunk_start
+                                    progress_bar = format_progress_bar(chunk_num + 1, total_chunks)
+                                    
+                                    print(f"  {progress_bar} Chunk {chunk_num+1}/{total_chunks}: {chunk_rows:,} rows ({elapsed:.1f}s) - Total: {exported_rows:,}")
+                                
+                                # Minimal cleanup (skip aggressive gc.collect())
+                                del chunk_df
+                                break  # Success - exit retry loop
+                                    
+                            except Exception as e:
+                                if attempt < max_retries - 1:
+                                    # Retry with backoff
+                                    wait_time = (attempt + 1) * 2  # 2s, 4s, 6s
+                                    print(f"  Chunk {chunk_num+1}/{total_chunks}: ⚠️  SSL error, retrying in {wait_time}s... (attempt {attempt+1}/{max_retries})")
+                                    time.sleep(wait_time)
+                                    continue
+                                else:
+                                    # Final failure
+                                    print(f"  Chunk {chunk_num+1}/{total_chunks}: ✗ FAILED after {max_retries} attempts: {e}")
+                                    import gc
+                                    gc.collect()
+                                    break
                 
                 # Final progress
                 print(f"\n{'=' * 80}")
