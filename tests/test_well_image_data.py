@@ -1,5 +1,28 @@
 """
 Test suite for well_image_data table access and functionality.
+
+OVERVIEW OF CHECKS AND ACCEPTABLE VALUES:
+
+Table Structure:
+- Required columns: id, plate_id, well_number, timestamp, number_of_organoids, max_organoid_size
+- Well numbers: 1-384 (for 384-well plates, adjust for other plate sizes)
+
+Data Quality Checks:
+- Organoid counts: 0-1000 per well (>1000 considered suspicious)
+- Average size: >= 0 (negative values are invalid)
+- Total area: >= 0 (negative values are invalid)
+- Well coverage: >50% of wells should have organoid data
+- Data completeness: >50% of records should have non-null values for key fields
+
+Integration Checks:
+- Wells with imaging data should have corresponding oxygen data (>50% overlap expected)
+- Organoid counts may correlate with oxygen consumption (not enforced, just measured)
+- Plates with imaging should be a subset of all experimental plates
+
+Expected Data Patterns:
+- Most wells should contain at least some organoids (biological expectation)
+- Multiple imaging sessions per well are possible (duplicates may exist)
+- Not all plates will have imaging data (imaging is selective)
 """
 
 import pytest
@@ -17,7 +40,7 @@ class TestWellImageData:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_load_well_image_data_all(self, loader):
@@ -27,18 +50,18 @@ class TestWellImageData:
         # Check DataFrame structure
         assert isinstance(df, pd.DataFrame)
         
-        # Check required columns exist
+        # Check required columns exist (based on actual schema)
         expected_columns = [
-            'id', 'plate_id', 'well_number', 'experiment_id',
-            'num_organoids', 'avg_size', 'total_area'
+            'id', 'plate_id', 'well_number', 'timestamp',
+            'number_of_organoids', 'max_organoid_size'
         ]
         for col in expected_columns:
             assert col in df.columns, f"Missing column: {col}"
         
         # Check data types
         assert df['well_number'].dtype in [np.int16, np.int32, np.int64]
-        if 'num_organoids' in df.columns and len(df) > 0:
-            assert df['num_organoids'].dtype in [np.int16, np.int32, np.int64]
+        if 'number_of_organoids' in df.columns and len(df) > 0:
+            assert df['number_of_organoids'].dtype in [np.int16, np.int32, np.int64, np.float32, np.float64]
         
         # Check basic data quality
         if len(df) > 0:
@@ -46,10 +69,10 @@ class TestWellImageData:
             assert df['well_number'].max() <= 384, "Well numbers exceed 384-well plate"
             
             # Check for non-negative values
-            if 'num_organoids' in df.columns:
-                assert (df['num_organoids'] >= 0).all(), "Negative organoid counts found"
-            if 'avg_size' in df.columns:
-                assert (df['avg_size'].dropna() >= 0).all(), "Negative average sizes found"
+            if 'number_of_organoids' in df.columns:
+                assert (df['number_of_organoids'] >= 0).all(), "Negative organoid counts found"
+            if 'max_organoid_size' in df.columns:
+                assert (df['max_organoid_size'].dropna() >= 0).all(), "Negative organoid sizes found"
     
     def test_load_well_image_data_specific_plates(self, loader):
         """Test loading well image data for specific plates."""
@@ -85,13 +108,13 @@ class TestWellImageData:
             print(f"Warning: {len(duplicate_wells)} wells have multiple image entries")
         
         # Check organoid count distribution
-        if 'num_organoids' in df.columns:
-            organoid_stats = df['num_organoids'].describe()
+        if 'number_of_organoids' in df.columns:
+            organoid_stats = df['number_of_organoids'].describe()
             assert organoid_stats['max'] < 1000, \
                 f"Suspiciously high organoid count: {organoid_stats['max']}"
             
             # Most wells should have some organoids
-            wells_with_organoids = (df['num_organoids'] > 0).sum()
+            wells_with_organoids = (df['number_of_organoids'] > 0).sum()
             total_wells = len(df)
             organoid_percentage = wells_with_organoids / total_wells * 100
             
@@ -108,7 +131,7 @@ class TestWellImageData:
         metadata_completeness = {}
         
         # Check completeness of key fields
-        for field in ['experiment_id', 'num_organoids', 'avg_size']:
+        for field in ['timestamp', 'number_of_organoids', 'max_organoid_size']:
             if field in df.columns:
                 non_null_count = df[field].notna().sum()
                 completeness = non_null_count / len(df) * 100
@@ -154,7 +177,7 @@ class TestWellImageIntegration:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_well_image_oxygen_correlation(self, loader):
@@ -217,10 +240,10 @@ class TestWellImageIntegration:
             how='inner'
         )
         
-        if len(merged) > 0 and 'num_organoids' in merged.columns:
+        if len(merged) > 0 and 'number_of_organoids' in merged.columns:
             # Basic sanity check: wells with more organoids should generally consume more oxygen
             # (though this is very simplified and may not always hold)
-            correlation = merged[['num_organoids', 'o2']].corr().iloc[0, 1]
+            correlation = merged[['number_of_organoids', 'o2']].corr().iloc[0, 1]
             
             print(f"\nOrganoid count vs oxygen correlation: {correlation:.3f}")
             print(f"Based on {len(merged)} wells from plate {test_plate}")

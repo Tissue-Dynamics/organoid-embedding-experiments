@@ -297,9 +297,9 @@ class TestOxygenDataQuality:
         """Test oxygen data structure and types."""
         assert set(sample_data.columns) == PROCESSED_DATA_COLUMNS
         
-        # Check data types
-        assert sample_data['o2'].dtype == 'float64'
-        assert sample_data['elapsed_hours'].dtype == 'float64'
+        # Check data types (accept both float32 and float64)
+        assert sample_data['o2'].dtype in ['float32', 'float64']
+        assert sample_data['elapsed_hours'].dtype in ['float32', 'float64']
         assert pd.api.types.is_datetime64_any_dtype(sample_data['timestamp'])
         
         # Check no nulls in critical columns

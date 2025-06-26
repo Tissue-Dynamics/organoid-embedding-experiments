@@ -384,8 +384,7 @@ class DataLoader:
         FROM db.public.processed_data
         """
         
-        assert self.conn is not None, "Database connection not established"
-        result = self.conn.execute(query).df()
+        result = self._execute_and_convert(query)
         
         return result.iloc[0].to_dict()
     
@@ -429,7 +428,7 @@ class DataLoader:
             sample_filter = ""
             
         query = f"""
-        SELECT * FROM db.gene_biomarkers.gene_expression
+        SELECT * FROM db.public.gene_expression
         {sample_filter}
         """
         
@@ -437,17 +436,29 @@ class DataLoader:
     
     def load_gene_samples(self) -> pd.DataFrame:
         """Load sample metadata from gene_biomarkers schema."""
-        query = "SELECT * FROM db.gene_biomarkers.samples"
+        query = "SELECT * FROM db.public.gene_samples"
         return self._execute_and_convert(query)
     
     def load_gene_biomarkers(self) -> pd.DataFrame:
         """Load biomarker definitions from gene_biomarkers schema."""
-        query = "SELECT * FROM db.gene_biomarkers.biomarkers"
+        query = "SELECT * FROM db.public.gene_biomarkers"
         return self._execute_and_convert(query)
     
     def load_gene_drug_keys(self) -> pd.DataFrame:
         """Load drug key mappings from gene_biomarkers schema."""
-        query = "SELECT * FROM db.gene_biomarkers.drug_keys"
+        query = "SELECT * FROM db.public.gene_drug_keys"
+        return self._execute_and_convert(query)
+    
+    def load_plate_table(self) -> pd.DataFrame:
+        """
+        Load plate metadata from plate_table.
+        
+        Returns:
+            DataFrame with plate information
+        """
+        query = """
+        SELECT * FROM db.public.plate_table
+        """
         return self._execute_and_convert(query)
     
     def export_all_data(self, output_dir: str = "data/extracted", formats: List[str] = ["parquet"]) -> Dict[str, str]:
@@ -714,8 +725,7 @@ class DataLoader:
         SELECT * FROM event_stats, critical_events
         """
         
-        assert self.conn is not None, "Database connection not established"
-        result = self.conn.execute(query).df()
+        result = self._execute_and_convert(query)
         
         return result.iloc[0].to_dict()
     

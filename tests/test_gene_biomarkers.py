@@ -1,5 +1,39 @@
 """
 Test suite for gene_biomarkers schema tables.
+
+OVERVIEW OF CHECKS AND ACCEPTABLE VALUES:
+
+gene_biomarkers.samples Table:
+- Required columns: sample_id (unique identifier)
+- Expected columns: plate_id, well_id, well_number, drug, concentration, timepoint, batch
+- Sample IDs must be unique (no duplicates allowed)
+- Each sample should link to a valid plate_id when present
+- Drug names should match main drug table where possible
+
+gene_biomarkers.biomarkers Table:
+- Required columns: biomarker_id, biomarker_name or gene_symbol
+- Biomarker IDs must be unique
+- Expected to contain gene/protein identifiers for expression analysis
+- Should have reasonable number of biomarkers (10s to 1000s)
+
+gene_biomarkers.drug_keys Table:
+- Maps barcodes to drug names
+- Barcode format should be consistent (same length for all)
+- Drug names should overlap with main drug table
+- Used for decoding experimental barcodes
+
+gene_biomarkers.gene_expression Table:
+- Required columns: sample_id, biomarker_id/gene_id, expression_value/value
+- Expression values: Typically -100 to 100,000 (log scale or normalized)
+- Missing values acceptable but should be <50% per sample
+- Each sample should have measurements for multiple biomarkers
+- Values must be numeric (float32 or float64)
+
+Integration Expectations:
+- Samples with gene data should have corresponding metabolic data
+- Not all plates will have gene expression (it's a subset)
+- Biomarker coverage: Not all defined biomarkers need expression data
+- Drug consistency: Gene study drugs should mostly overlap with main study
 """
 
 import pytest
@@ -17,7 +51,7 @@ class TestGeneSamples:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_load_gene_samples(self, loader):
@@ -72,7 +106,7 @@ class TestGeneBiomarkers:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_load_gene_biomarkers(self, loader):
@@ -108,7 +142,7 @@ class TestGeneDrugKeys:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_load_gene_drug_keys(self, loader):
@@ -169,7 +203,7 @@ class TestGeneExpression:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_load_gene_expression_all(self, loader):
@@ -274,7 +308,7 @@ class TestGeneDataIntegration:
     @pytest.fixture
     def loader(self):
         """Create a DataLoader instance."""
-        with DataLoader(use_local=False) as loader:
+        with DataLoader() as loader:  # Let it auto-detect local vs remote
             yield loader
     
     def test_gene_metabolic_integration(self, loader):
