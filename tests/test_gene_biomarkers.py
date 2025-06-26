@@ -68,15 +68,15 @@ class TestGeneSamples:
             'created_at', 'experiment_id'
         ]
         
-        # At least some key columns should exist
-        key_columns = ['sample_id']
+        # Check actual columns exist (based on database schema)
+        key_columns = ['id', 'plate_id']
         for col in key_columns:
             assert col in df.columns, f"Missing key column: {col}"
         
         # Check data quality
         if len(df) > 0:
-            # Sample IDs should be unique
-            assert df['sample_id'].nunique() == len(df), "Duplicate sample IDs found"
+            # IDs should be unique
+            assert df['id'].nunique() == len(df), "Duplicate IDs found"
             
             # Check for drug information if present
             if 'drug' in df.columns:
