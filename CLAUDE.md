@@ -104,3 +104,6 @@ export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe
 - Include all visualizations directly in the feature extraction/analysis script
 - This ensures immediate verification of results
 - If a script doesn't produce figures, it cannot be verified and should be deleted
+
+**File Management Guidelines**:
+- Always delete temporary files or throw-away scripts after you are done using them

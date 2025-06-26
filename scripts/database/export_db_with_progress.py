@@ -2,6 +2,7 @@
 """
 Export database to local DuckDB file with live progress display.
 Single script that handles both export and progress monitoring.
+Uses correct data types based on database schema documentation.
 """
 
 import os
@@ -66,17 +67,27 @@ def export_with_progress():
                 print(f"✗ Connection test failed: {e}")
                 return False
             
-            # Small tables to export
+            # Small tables to export with proper queries
             small_tables = [
                 ("drugs", "SELECT * FROM db.public.drugs"),
                 ("event_table", "SELECT * FROM db.public.event_table"),
                 ("well_map_data", "SELECT * FROM db.public.well_map_data"),
                 ("plate_table", """
                     SELECT 
-                        id, name, created_at, updated_at, created_by, 
-                        deleted, status, state, tissue, description,
+                        id::VARCHAR as id,
+                        name,
+                        created_at,
+                        updated_at,
+                        created_by::VARCHAR as created_by,
+                        deleted,
+                        status::VARCHAR as status,
+                        state::VARCHAR as state,
+                        tissue,
+                        description,
                         array_to_string(plate_size, 'x') as plate_size,
-                        qc_values, qc_thresholds, internal_notes
+                        qc_values::VARCHAR as qc_values,
+                        qc_thresholds::VARCHAR as qc_thresholds,
+                        internal_notes::VARCHAR as internal_notes
                     FROM db.public.plate_table
                 """),
             ]
@@ -122,22 +133,20 @@ def export_with_progress():
                 num_plates = len(plates_df)
                 print(f"{num_plates} plates\n")
                 
-                # Create table structure
+                # Create table structure based on documented schema
                 print("Creating table structure...", end=' ', flush=True)
-                # Create table with explicit schema
-                # Use VARCHAR for columns that might have mixed types or '<NA>' values
                 create_table_query = """
                     CREATE TABLE processed_data (
                         id BIGINT,
-                        plate_id VARCHAR,
+                        plate_id VARCHAR,           -- UUID stored as VARCHAR
                         well_number SMALLINT,
                         timestamp TIMESTAMP WITH TIME ZONE,
                         median_o2 FLOAT,
                         cycle_time_stamp TIMESTAMP WITH TIME ZONE,
                         cycle_num SMALLINT,
                         is_excluded BOOLEAN,
-                        exclusion_reason VARCHAR,  -- Changed to VARCHAR to handle '<NA>' and other strings
-                        excluded_by VARCHAR,       -- Changed to VARCHAR to handle '<NA>' and other strings
+                        exclusion_reason VARCHAR,   -- Can be NULL, integer, or string
+                        excluded_by VARCHAR,        -- Can be NULL, integer (user_id), or string
                         excluded_at TIMESTAMP WITH TIME ZONE
                     )
                 """
@@ -165,14 +174,25 @@ def export_with_progress():
                     print(f"\rPlate {idx+1}/{num_plates} {format_progress_bar(exported_rows, total_rows)}{eta_str}", 
                           end='', flush=True)
                     
-                    # Export plate
+                    # Export plate with explicit type conversions
                     plate_query = f"""
-                        SELECT * FROM db.public.processed_data 
+                        SELECT 
+                            id,
+                            plate_id::VARCHAR as plate_id,
+                            well_number,
+                            timestamp,
+                            median_o2,
+                            cycle_time_stamp,
+                            cycle_num,
+                            is_excluded,
+                            COALESCE(exclusion_reason::VARCHAR, NULL) as exclusion_reason,
+                            COALESCE(excluded_by::VARCHAR, NULL) as excluded_by,
+                            excluded_at
+                        FROM db.public.processed_data 
                         WHERE plate_id = '{plate_id}'
                     """
                     
                     try:
-                        # Debug: show what we're doing
                         plate_start = time.time()
                         
                         # Execute query
@@ -185,9 +205,6 @@ def export_with_progress():
                         
                         # Insert into local database
                         local_conn.execute("INSERT INTO processed_data SELECT * FROM plate_df")
-                        
-                        # Verify insertion
-                        verify_count = local_conn.execute(f"SELECT COUNT(*) FROM processed_data").fetchone()[0]
                         
                         exported_rows += rows_fetched
                         successful_plates += 1
