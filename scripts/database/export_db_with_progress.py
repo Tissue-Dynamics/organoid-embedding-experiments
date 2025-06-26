@@ -54,7 +54,17 @@ def export_with_progress():
     
     try:
         with DataLoader(use_local=False) as loader:  # Force remote
-            print("✓ Connected to remote database\n")
+            print("✓ Connected to remote database")
+            
+            # Quick connection test
+            print("\nTesting database connection...", end=' ', flush=True)
+            try:
+                test_result = loader._execute_and_convert("SELECT COUNT(*) as count FROM db.public.drugs")
+                test_count = test_result['count'].iloc[0]
+                print(f"✓ Found {test_count} drugs\n")
+            except Exception as e:
+                print(f"✗ Connection test failed: {e}")
+                return False
             
             # Small tables to export
             small_tables = [
@@ -124,17 +134,18 @@ def export_with_progress():
                 print("\nExporting plates:")
                 exported_rows = 0
                 failed_plates = []
+                successful_plates = 0
                 
                 for idx, (plate_id, row_count) in enumerate(zip(plates_df['plate_id'], plates_df['row_count'])):
                     # Calculate ETA
-                    if idx > 0:
+                    if successful_plates > 0 and exported_rows > 0:
                         elapsed = time.time() - start_time
                         rate = exported_rows / elapsed
                         remaining_rows = total_rows - exported_rows
                         eta_seconds = remaining_rows / rate if rate > 0 else 0
                         eta_str = f" | ETA: {str(timedelta(seconds=int(eta_seconds)))}"
                     else:
-                        eta_str = ""
+                        eta_str = " | Calculating..."
                     
                     # Progress display
                     print(f"\rPlate {idx+1}/{num_plates} {format_progress_bar(exported_rows, total_rows)}{eta_str}", 
@@ -147,11 +158,35 @@ def export_with_progress():
                     """
                     
                     try:
+                        # Debug: show what we're doing
+                        plate_start = time.time()
+                        
+                        # Execute query
                         plate_df = loader._execute_and_convert(plate_query)
+                        rows_fetched = len(plate_df)
+                        
+                        if rows_fetched == 0:
+                            failed_plates.append((plate_id, f"No rows returned (expected {row_count})"))
+                            continue
+                        
+                        # Insert into local database
                         local_conn.execute("INSERT INTO processed_data SELECT * FROM plate_df")
-                        exported_rows += len(plate_df)
+                        
+                        # Verify insertion
+                        verify_count = local_conn.execute(f"SELECT COUNT(*) FROM processed_data").fetchone()[0]
+                        
+                        exported_rows += rows_fetched
+                        successful_plates += 1
+                        
+                        # Show success for this plate
+                        plate_time = time.time() - plate_start
+                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✓ {rows_fetched:,} rows in {plate_time:.1f}s", end='', flush=True)
+                        print()  # New line for next plate
+                        
                     except Exception as e:
                         failed_plates.append((plate_id, str(e)))
+                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✗ ERROR: {str(e)[:50]}...", end='', flush=True)
+                        print()  # New line for next plate
                 
                 # Final progress
                 print(f"\rPlate {num_plates}/{num_plates} {format_progress_bar(exported_rows, total_rows)} | COMPLETE")
