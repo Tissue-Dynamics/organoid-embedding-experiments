@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Export database to local DuckDB file with live progress display.
-Single script that handles both export and progress monitoring.
-Uses correct data types based on database schema documentation.
+Fast database export that skips slow COUNT operations.
+Shows progress based on plates completed rather than total rows.
 """
 
 import os
@@ -30,7 +29,7 @@ def format_progress_bar(current, total, width=40):
     progress = current / total
     filled = int(width * progress)
     bar = '█' * filled + '░' * (width - filled)
-    return f"[{bar}] {current:,}/{total:,} ({progress*100:.1f}%)"
+    return f"[{bar}] {current}/{total} ({progress*100:.1f}%)"
 
 def export_with_progress():
     """Export database with integrated progress display."""
@@ -38,7 +37,7 @@ def export_with_progress():
     start_time = time.time()
     
     print("=" * 80)
-    print("DATABASE EXPORT TO DUCKDB")
+    print("FAST DATABASE EXPORT TO DUCKDB")
     print("=" * 80)
     print(f"Output: {DB_FILE}")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -67,7 +66,7 @@ def export_with_progress():
                 print(f"✗ Connection test failed: {e}")
                 return False
             
-            # Small tables to export with proper queries
+            # Small tables to export
             small_tables = [
                 ("drugs", "SELECT * FROM db.public.drugs"),
                 ("event_table", "SELECT * FROM db.public.event_table"),
@@ -90,12 +89,6 @@ def export_with_progress():
                         internal_notes::VARCHAR as internal_notes
                     FROM db.public.plate_table
                 """),
-                ("well_image_data", "SELECT * FROM db.public.well_image_data"),
-                # Gene biomarkers tables
-                ("gene_samples", "SELECT * FROM db.gene_biomarkers.samples"),
-                ("gene_biomarkers", "SELECT * FROM db.gene_biomarkers.biomarkers"),
-                ("gene_drug_keys", "SELECT * FROM db.gene_biomarkers.drug_keys"),
-                ("gene_expression", "SELECT * FROM db.gene_biomarkers.gene_expression"),
             ]
             
             # Export small tables
@@ -121,38 +114,31 @@ def export_with_progress():
             print("-" * 80)
             
             try:
-                # Get total count
-                print("Counting rows...", end=' ', flush=True)
-                count_query = "SELECT COUNT(*) as count FROM db.public.processed_data"
-                total_rows = loader._execute_and_convert(count_query)['count'].iloc[0]
-                print(f"{total_rows:,} total rows")
-                
-                # Get plates
-                print("Getting plate list...", end=' ', flush=True)
+                # Skip the slow COUNT query - just get plates with approximate counts
+                print("Getting plate list (without counting all rows)...")
                 plates_query = """
-                    SELECT DISTINCT plate_id, COUNT(*) as row_count 
+                    SELECT DISTINCT plate_id
                     FROM db.public.processed_data 
-                    GROUP BY plate_id 
-                    ORDER BY row_count
+                    ORDER BY plate_id
                 """
                 plates_df = loader._execute_and_convert(plates_query)
                 num_plates = len(plates_df)
-                print(f"{num_plates} plates\n")
+                print(f"Found {num_plates} plates to export\n")
                 
-                # Create table structure based on documented schema
+                # Create table structure
                 print("Creating table structure...", end=' ', flush=True)
                 create_table_query = """
                     CREATE TABLE processed_data (
                         id BIGINT,
-                        plate_id VARCHAR,           -- UUID stored as VARCHAR
+                        plate_id VARCHAR,
                         well_number SMALLINT,
                         timestamp TIMESTAMP WITH TIME ZONE,
                         median_o2 FLOAT,
                         cycle_time_stamp TIMESTAMP WITH TIME ZONE,
                         cycle_num SMALLINT,
                         is_excluded BOOLEAN,
-                        exclusion_reason VARCHAR,   -- Can be NULL, integer, or string
-                        excluded_by VARCHAR,        -- Can be NULL, integer (user_id), or string
+                        exclusion_reason VARCHAR,
+                        excluded_by VARCHAR,
                         excluded_at TIMESTAMP WITH TIME ZONE
                     )
                 """
@@ -165,20 +151,10 @@ def export_with_progress():
                 failed_plates = []
                 successful_plates = 0
                 
-                for idx, (plate_id, row_count) in enumerate(zip(plates_df['plate_id'], plates_df['row_count'])):
-                    # Calculate ETA
-                    if successful_plates > 0 and exported_rows > 0:
-                        elapsed = time.time() - start_time
-                        rate = exported_rows / elapsed
-                        remaining_rows = total_rows - exported_rows
-                        eta_seconds = remaining_rows / rate if rate > 0 else 0
-                        eta_str = f" | ETA: {str(timedelta(seconds=int(eta_seconds)))}"
-                    else:
-                        eta_str = " | Calculating..."
-                    
-                    # Progress display
-                    print(f"\rPlate {idx+1}/{num_plates} {format_progress_bar(exported_rows, total_rows)}{eta_str}", 
-                          end='', flush=True)
+                for idx, plate_id in enumerate(plates_df['plate_id']):
+                    # Progress display (by plate count, not row count)
+                    progress_bar = format_progress_bar(idx, num_plates)
+                    print(f"\rPlate {idx+1}/{num_plates} {progress_bar}", end='', flush=True)
                     
                     # Export plate with explicit type conversions
                     plate_query = f"""
@@ -191,8 +167,14 @@ def export_with_progress():
                             cycle_time_stamp,
                             cycle_num,
                             is_excluded,
-                            COALESCE(exclusion_reason::VARCHAR, NULL) as exclusion_reason,
-                            COALESCE(excluded_by::VARCHAR, NULL) as excluded_by,
+                            CASE 
+                                WHEN exclusion_reason IS NULL THEN NULL
+                                ELSE exclusion_reason::VARCHAR
+                            END as exclusion_reason,
+                            CASE 
+                                WHEN excluded_by IS NULL THEN NULL
+                                ELSE excluded_by::VARCHAR
+                            END as excluded_by,
                             excluded_at
                         FROM db.public.processed_data 
                         WHERE plate_id = '{plate_id}'
@@ -206,7 +188,9 @@ def export_with_progress():
                         rows_fetched = len(plate_df)
                         
                         if rows_fetched == 0:
-                            failed_plates.append((plate_id, f"No rows returned (expected {row_count})"))
+                            failed_plates.append((plate_id, f"No rows returned"))
+                            print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✗ No data", end='', flush=True)
+                            print()
                             continue
                         
                         # Insert into local database
@@ -217,7 +201,13 @@ def export_with_progress():
                         
                         # Show success for this plate
                         plate_time = time.time() - plate_start
-                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✓ {rows_fetched:,} rows in {plate_time:.1f}s", end='', flush=True)
+                        elapsed_total = time.time() - start_time
+                        avg_time_per_plate = elapsed_total / (idx + 1)
+                        remaining_plates = num_plates - (idx + 1)
+                        eta_seconds = remaining_plates * avg_time_per_plate
+                        eta_str = str(timedelta(seconds=int(eta_seconds)))
+                        
+                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✓ {rows_fetched:,} rows in {plate_time:.1f}s | Total: {exported_rows:,} rows | ETA: {eta_str}", end='', flush=True)
                         print()  # New line for next plate
                         
                     except Exception as e:
@@ -225,18 +215,24 @@ def export_with_progress():
                         print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✗ ERROR: {str(e)[:50]}...", end='', flush=True)
                         print()  # New line for next plate
                 
-                # Final progress
-                print(f"\rPlate {num_plates}/{num_plates} {format_progress_bar(exported_rows, total_rows)} | COMPLETE")
+                # Final summary
+                print(f"\n{'=' * 80}")
+                print(f"PROCESSED_DATA EXPORT COMPLETE")
+                print(f"{'=' * 80}")
+                print(f"Successful plates: {successful_plates}/{num_plates}")
+                print(f"Total rows exported: {exported_rows:,}")
                 
                 if failed_plates:
-                    print(f"\n\n⚠️  Failed to export {len(failed_plates)} plates:")
+                    print(f"\n⚠️  Failed to export {len(failed_plates)} plates:")
                     for pid, err in failed_plates[:5]:  # Show first 5
-                        print(f"  - {pid}: {err[:50]}...")
+                        print(f"  - {pid}: {err[:100]}...")
                     if len(failed_plates) > 5:
                         print(f"  ... and {len(failed_plates) - 5} more")
                 
             except Exception as e:
                 print(f"\n✗ ERROR exporting processed_data: {e}")
+                import traceback
+                traceback.print_exc()
             
             # Create indexes
             print("\n\nCREATING INDEXES")
@@ -270,18 +266,12 @@ def export_with_progress():
             print("\n\nFINAL STATISTICS")
             print("-" * 80)
             
-            tables_to_check = [
-                "drugs", "event_table", "well_map_data", "plate_table", 
-                "well_image_data", "gene_samples", "gene_biomarkers", 
-                "gene_drug_keys", "gene_expression", "processed_data"
-            ]
-            
-            for table in tables_to_check:
+            for table in ["drugs", "event_table", "well_map_data", "plate_table", "processed_data"]:
                 try:
                     count = local_conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                     print(f"{table}: {count:,} rows")
-                except:
-                    print(f"{table}: ERROR")
+                except Exception as e:
+                    print(f"{table}: ERROR - {e}")
             
             # File size
             file_size_mb = DB_FILE.stat().st_size / (1024 * 1024)
@@ -289,6 +279,8 @@ def export_with_progress():
             
     except Exception as e:
         print(f"\n\n✗ FATAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         return False
     
     finally:

@@ -387,6 +387,65 @@ class DataLoader:
         
         return result.iloc[0].to_dict()
     
+    def load_well_image_data(self, plate_ids: Optional[List[str]] = None) -> pd.DataFrame:
+        """
+        Load well image data containing organoid counts and measurements.
+        
+        Args:
+            plate_ids: Optional list of plate IDs to filter by
+            
+        Returns:
+            DataFrame with well image data
+        """
+        if plate_ids:
+            plate_filter = f"WHERE plate_id IN ({','.join([f\"'{p}'\" for p in plate_ids])})"
+        else:
+            plate_filter = ""
+            
+        query = f"""
+        SELECT * FROM db.public.well_image_data
+        {plate_filter}
+        """
+        
+        return self._execute_and_convert(query)
+    
+    def load_gene_expression_data(self, sample_ids: Optional[List[str]] = None) -> pd.DataFrame:
+        """
+        Load gene expression data from the gene_biomarkers schema.
+        
+        Args:
+            sample_ids: Optional list of sample IDs to filter by
+            
+        Returns:
+            DataFrame with gene expression data
+        """
+        if sample_ids:
+            sample_filter = f"WHERE sample_id IN ({','.join([f\"'{s}'\" for s in sample_ids])})"
+        else:
+            sample_filter = ""
+            
+        query = f"""
+        SELECT * FROM db.gene_biomarkers.gene_expression
+        {sample_filter}
+        """
+        
+        return self._execute_and_convert(query)
+    
+    def load_gene_samples(self) -> pd.DataFrame:
+        """Load sample metadata from gene_biomarkers schema."""
+        query = "SELECT * FROM db.gene_biomarkers.samples"
+        return self._execute_and_convert(query)
+    
+    def load_gene_biomarkers(self) -> pd.DataFrame:
+        """Load biomarker definitions from gene_biomarkers schema."""
+        query = "SELECT * FROM db.gene_biomarkers.biomarkers"
+        return self._execute_and_convert(query)
+    
+    def load_gene_drug_keys(self) -> pd.DataFrame:
+        """Load drug key mappings from gene_biomarkers schema."""
+        query = "SELECT * FROM db.gene_biomarkers.drug_keys"
+        return self._execute_and_convert(query)
+    
     def export_all_data(self, output_dir: str = "data/extracted", formats: List[str] = ["parquet"]) -> Dict[str, str]:
         """
         Export all data to local files for offline analysis.
