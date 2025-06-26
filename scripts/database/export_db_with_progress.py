@@ -121,23 +121,16 @@ def export_with_progress():
             print("-" * 80)
             
             try:
-                # Get total count
-                print("Counting rows...", end=' ', flush=True)
-                count_query = "SELECT COUNT(*) as count FROM db.public.processed_data"
-                total_rows = loader._execute_and_convert(count_query)['count'].iloc[0]
-                print(f"{total_rows:,} total rows")
-                
-                # Get plates
-                print("Getting plate list...", end=' ', flush=True)
+                # Skip the slow COUNT query - just get plates
+                print("Getting plate list (without counting all rows)...")
                 plates_query = """
-                    SELECT DISTINCT plate_id, COUNT(*) as row_count 
+                    SELECT DISTINCT plate_id
                     FROM db.public.processed_data 
-                    GROUP BY plate_id 
-                    ORDER BY row_count
+                    ORDER BY plate_id
                 """
                 plates_df = loader._execute_and_convert(plates_query)
                 num_plates = len(plates_df)
-                print(f"{num_plates} plates\n")
+                print(f"Found {num_plates} plates to export\n")
                 
                 # Create table structure based on documented schema
                 print("Creating table structure...", end=' ', flush=True)
@@ -165,19 +158,20 @@ def export_with_progress():
                 failed_plates = []
                 successful_plates = 0
                 
-                for idx, (plate_id, row_count) in enumerate(zip(plates_df['plate_id'], plates_df['row_count'])):
-                    # Calculate ETA
-                    if successful_plates > 0 and exported_rows > 0:
+                for idx, plate_id in enumerate(plates_df['plate_id']):
+                    # Calculate ETA based on plates
+                    if idx > 0:
                         elapsed = time.time() - start_time
-                        rate = exported_rows / elapsed
-                        remaining_rows = total_rows - exported_rows
-                        eta_seconds = remaining_rows / rate if rate > 0 else 0
+                        avg_time_per_plate = elapsed / (idx + 1)
+                        remaining_plates = num_plates - (idx + 1)
+                        eta_seconds = remaining_plates * avg_time_per_plate
                         eta_str = f" | ETA: {str(timedelta(seconds=int(eta_seconds)))}"
                     else:
                         eta_str = " | Calculating..."
                     
-                    # Progress display
-                    print(f"\rPlate {idx+1}/{num_plates} {format_progress_bar(exported_rows, total_rows)}{eta_str}", 
+                    # Progress display (by plate count, not row count)
+                    progress_bar = format_progress_bar(idx, num_plates)
+                    print(f"\rPlate {idx+1}/{num_plates} {progress_bar}{eta_str}", 
                           end='', flush=True)
                     
                     # Export plate with explicit type conversions
@@ -206,7 +200,7 @@ def export_with_progress():
                         rows_fetched = len(plate_df)
                         
                         if rows_fetched == 0:
-                            failed_plates.append((plate_id, f"No rows returned (expected {row_count})"))
+                            failed_plates.append((plate_id, f"No rows returned"))
                             continue
                         
                         # Insert into local database
@@ -217,7 +211,7 @@ def export_with_progress():
                         
                         # Show success for this plate
                         plate_time = time.time() - plate_start
-                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✓ {rows_fetched:,} rows in {plate_time:.1f}s", end='', flush=True)
+                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✓ {rows_fetched:,} rows in {plate_time:.1f}s | Total: {exported_rows:,} rows", end='', flush=True)
                         print()  # New line for next plate
                         
                     except Exception as e:
@@ -226,7 +220,11 @@ def export_with_progress():
                         print()  # New line for next plate
                 
                 # Final progress
-                print(f"\rPlate {num_plates}/{num_plates} {format_progress_bar(exported_rows, total_rows)} | COMPLETE")
+                print(f"\n{'=' * 80}")
+                print(f"PROCESSED_DATA EXPORT COMPLETE")
+                print(f"{'=' * 80}")
+                print(f"Successful plates: {successful_plates}/{num_plates}")
+                print(f"Total rows exported: {exported_rows:,}")
                 
                 if failed_plates:
                     print(f"\n\n⚠️  Failed to export {len(failed_plates)} plates:")

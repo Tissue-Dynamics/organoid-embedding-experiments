@@ -398,7 +398,8 @@ class DataLoader:
             DataFrame with well image data
         """
         if plate_ids:
-            plate_filter = f"WHERE plate_id IN ({','.join([f\"'{p}'\" for p in plate_ids])})"
+            plate_list = "', '".join(plate_ids)
+            plate_filter = f"WHERE plate_id IN ('{plate_list}')"
         else:
             plate_filter = ""
             
@@ -420,7 +421,8 @@ class DataLoader:
             DataFrame with gene expression data
         """
         if sample_ids:
-            sample_filter = f"WHERE sample_id IN ({','.join([f\"'{s}'\" for s in sample_ids])})"
+            sample_list = "', '".join(sample_ids)
+            sample_filter = f"WHERE sample_id IN ('{sample_list}')"
         else:
             sample_filter = ""
             

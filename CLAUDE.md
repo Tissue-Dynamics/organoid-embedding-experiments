@@ -45,14 +45,39 @@ See `docs/COMPREHENSIVE_DILI_ANALYSIS_LESSONS_LEARNED.md` for detailed documenta
 - `src/` = Import from here (reusable modules, utilities, classes)
 - `scripts/` = Run these (executable analysis scripts with main blocks)
 
+## Database Access
+
+The project supports both remote PostgreSQL and local DuckDB databases:
+
+```bash
+# Export database to local DuckDB file (recommended for faster analysis)
+python scripts/database/export_db_with_progress.py
+
+# Use local database (auto-detected if organoid_data.duckdb exists)
+with DataLoader() as loader:
+    data = loader.load_oxygen_data()
+
+# Force remote database
+with DataLoader(use_local=False) as loader:
+    data = loader.load_drug_metadata()
+```
+
+### Exported Tables
+- **Core Tables**: drugs, event_table, well_map_data, plate_table, processed_data
+- **Imaging Data**: well_image_data (organoid counts and measurements)
+- **Gene Expression**: gene_samples, gene_biomarkers, gene_drug_keys, gene_expression
+
 ## Usage
 
 ```bash
 # Install dependencies
 uv pip install -r requirements.txt
 
-# Set database credentials
-export DATABASE_URL="postgresql://..."
+# Set database credentials (for remote access or initial export)
+export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+
+# Export database to local file (one-time setup, takes ~10-15 minutes)
+python scripts/database/export_db_with_progress.py
 
 # Run feature extraction
 python scripts/features/event_aware_extraction.py
@@ -73,8 +98,14 @@ python scripts/visualization/event_verification.py
 # Use uv for package management (user preference)
 uv pip install -r requirements.txt
 
-# Database connection
-export DATABASE_URL="postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+# Database connection (set in environment or .env file)
+export DATABASE_URL="postgresql://..."
+
+# Run tests
+python -m pytest tests/
+
+# Check code style
+ruff check .
 ```
 
 ## Important Guidelines
