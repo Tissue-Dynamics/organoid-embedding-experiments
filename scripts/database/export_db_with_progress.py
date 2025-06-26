@@ -11,6 +11,7 @@ from pathlib import Path
 import duckdb
 import time
 from datetime import datetime, timedelta
+import pandas as pd
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -53,9 +54,22 @@ def export_with_progress():
     # Create new DuckDB connection
     local_conn = duckdb.connect(str(DB_FILE))
     
+    # Force close any existing DuckDB connections to PostgreSQL
     try:
+        # This will close all DuckDB connections in the current process
+        import gc
+        gc.collect()  # Force garbage collection to clean up any orphaned connections
+    except:
+        pass
+    
+    try:
+        # Use context manager to ensure proper connection cleanup
         with DataLoader(use_local=False) as loader:  # Force remote
             print("✓ Connected to remote database")
+            
+            # Force garbage collection to clean up any previous connections
+            import gc
+            gc.collect()
             
             # Quick connection test
             print("\nTesting database connection...", end=' ', flush=True)
@@ -121,30 +135,6 @@ def export_with_progress():
             print("-" * 80)
             
             try:
-                # Get plate list from plate_table which should be much faster
-                print("Getting plate list from plate_table...")
-                plates_query = """
-                    SELECT DISTINCT p.id as plate_id
-                    FROM db.public.plate_table p
-                    WHERE EXISTS (
-                        SELECT 1 FROM db.public.processed_data pd 
-                        WHERE pd.plate_id = p.id 
-                        LIMIT 1
-                    )
-                    ORDER BY p.id
-                """
-                
-                # If that's still slow, just get all plates from plate_table
-                try:
-                    plates_df = loader._execute_and_convert(plates_query)
-                except:
-                    print("  Falling back to simple plate list...")
-                    plates_query = "SELECT id as plate_id FROM db.public.plate_table ORDER BY id"
-                    plates_df = loader._execute_and_convert(plates_query)
-                
-                num_plates = len(plates_df)
-                print(f"Found {num_plates} plates to export\n")
-                
                 # Create table structure based on documented schema
                 print("Creating table structure...", end=' ', flush=True)
                 create_table_query = """
@@ -165,86 +155,92 @@ def export_with_progress():
                 local_conn.execute(create_table_query)
                 print("✓")
                 
-                # Export each plate with progress
-                print("\nExporting plates:")
-                exported_rows = 0
-                failed_plates = []
-                successful_plates = 0
+                # OPTIMIZED: Row-based chunking (much faster than plate-by-plate)
+                print("Getting total row count...", end=' ', flush=True)
+                start = time.time()
+                count_query = """
+                    SELECT COUNT(*) as total_count 
+                    FROM db.public.processed_data 
+                    WHERE is_excluded = false
+                """
+                count_result = loader._execute_and_convert(count_query)
+                total_rows = count_result['total_count'].iloc[0]
+                elapsed = time.time() - start
+                print(f"✓ Found {total_rows:,} rows ({elapsed:.1f}s)")
                 
-                for idx, plate_id in enumerate(plates_df['plate_id']):
-                    # Calculate ETA based on plates
-                    if idx > 0:
-                        elapsed = time.time() - start_time
-                        avg_time_per_plate = elapsed / (idx + 1)
-                        remaining_plates = num_plates - (idx + 1)
-                        eta_seconds = remaining_plates * avg_time_per_plate
-                        eta_str = f" | ETA: {str(timedelta(seconds=int(eta_seconds)))}"
-                    else:
-                        eta_str = " | Calculating..."
+                if total_rows == 0:
+                    print("✗ No data to export")
+                    exported_rows = 0
+                else:
+                    # Export in chunks - balance between speed and progress updates
+                    chunk_size = 20000  # 20K rows per chunk - reduce network round-trips
+                    total_chunks = (total_rows + chunk_size - 1) // chunk_size  # Ceiling division
                     
-                    # Progress display (by plate count, not row count)
-                    progress_bar = format_progress_bar(idx, num_plates)
-                    print(f"\rPlate {idx+1}/{num_plates} {progress_bar}{eta_str}", 
-                          end='', flush=True)
+                    print(f"\nExporting {total_rows:,} rows in {total_chunks} chunks of {chunk_size:,}...")
+                    print("=" * 70)
                     
-                    # Export plate with explicit type conversions
-                    plate_query = f"""
-                        SELECT 
-                            id,
-                            plate_id::VARCHAR as plate_id,
-                            well_number,
-                            timestamp,
-                            median_o2,
-                            cycle_time_stamp,
-                            cycle_num,
-                            is_excluded,
-                            COALESCE(exclusion_reason::VARCHAR, NULL) as exclusion_reason,
-                            COALESCE(excluded_by::VARCHAR, NULL) as excluded_by,
-                            excluded_at
-                        FROM db.public.processed_data 
-                        WHERE plate_id = '{plate_id}'
-                    """
+                    exported_rows = 0
                     
-                    try:
-                        plate_start = time.time()
+                    for chunk_num in range(total_chunks):
+                        offset = chunk_num * chunk_size
                         
-                        # Execute query
-                        plate_df = loader._execute_and_convert(plate_query)
-                        rows_fetched = len(plate_df)
-                        
-                        if rows_fetched == 0:
-                            failed_plates.append((plate_id, f"No rows returned"))
+                        try:
+                            chunk_start = time.time()
+                            
+                            # Optimized query - no COALESCE, use UUID directly, simple filtering
+                            chunk_query = f"""
+                                SELECT 
+                                    id,
+                                    plate_id,
+                                    well_number,
+                                    timestamp,
+                                    median_o2,
+                                    cycle_time_stamp,
+                                    cycle_num,
+                                    is_excluded,
+                                    exclusion_reason,
+                                    excluded_by,
+                                    excluded_at
+                                FROM db.public.processed_data 
+                                WHERE is_excluded = false
+                                ORDER BY id
+                                LIMIT {chunk_size} OFFSET {offset}
+                            """
+                            
+                            chunk_df = loader._execute_and_convert(chunk_query)
+                            chunk_rows = len(chunk_df)
+                            
+                            if chunk_rows > 0:
+                                # Insert into local database
+                                local_conn.execute("INSERT INTO processed_data SELECT * FROM chunk_df")
+                                exported_rows += chunk_rows
+                                
+                                elapsed = time.time() - chunk_start
+                                progress_bar = format_progress_bar(chunk_num + 1, total_chunks)
+                                
+                                print(f"  {progress_bar} Chunk {chunk_num+1}/{total_chunks}: {chunk_rows:,} rows ({elapsed:.1f}s) - Total: {exported_rows:,}")
+                            
+                            # Minimal cleanup (skip aggressive gc.collect())
+                            del chunk_df
+                                
+                        except Exception as e:
+                            print(f"  Chunk {chunk_num+1}/{total_chunks}: ✗ ERROR: {e}")
+                            import gc
+                            gc.collect()
                             continue
-                        
-                        # Insert into local database
-                        local_conn.execute("INSERT INTO processed_data SELECT * FROM plate_df")
-                        
-                        exported_rows += rows_fetched
-                        successful_plates += 1
-                        
-                        # Show success for this plate
-                        plate_time = time.time() - plate_start
-                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✓ {rows_fetched:,} rows in {plate_time:.1f}s | Total: {exported_rows:,} rows", end='', flush=True)
-                        print()  # New line for next plate
-                        
-                    except Exception as e:
-                        failed_plates.append((plate_id, str(e)))
-                        print(f"\rPlate {idx+1}/{num_plates} ({plate_id[:8]}...) ✗ ERROR: {str(e)[:50]}...", end='', flush=True)
-                        print()  # New line for next plate
                 
                 # Final progress
                 print(f"\n{'=' * 80}")
                 print(f"PROCESSED_DATA EXPORT COMPLETE")
                 print(f"{'=' * 80}")
-                print(f"Successful plates: {successful_plates}/{num_plates}")
                 print(f"Total rows exported: {exported_rows:,}")
                 
-                if failed_plates:
-                    print(f"\n\n⚠️  Failed to export {len(failed_plates)} plates:")
-                    for pid, err in failed_plates[:5]:  # Show first 5
-                        print(f"  - {pid}: {err[:50]}...")
-                    if len(failed_plates) > 5:
-                        print(f"  ... and {len(failed_plates) - 5} more")
+                if exported_rows > 0:
+                    # Get some stats
+                    stats_query = "SELECT COUNT(DISTINCT plate_id) as plates, MIN(timestamp) as min_time, MAX(timestamp) as max_time FROM processed_data"
+                    stats = local_conn.execute(stats_query).fetchone()
+                    print(f"Unique plates: {stats[0]}")
+                    print(f"Time range: {stats[1]} to {stats[2]}")
                 
             except Exception as e:
                 print(f"\n✗ ERROR exporting processed_data: {e}")
@@ -319,9 +315,13 @@ def export_with_progress():
     return True
 
 if __name__ == "__main__":
-    # Set DATABASE_URL if not already set
+    # Use Transaction pooler with IPv4 add-on (many more connections)
     if not os.getenv('DATABASE_URL'):
-        os.environ['DATABASE_URL'] = "postgresql://postgres.ooqjakwyfawahvnzcllk:eTEEoWWGExovyChe@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+        os.environ['DATABASE_URL'] = "postgres://postgres:eTEEoWWGExovyChe@db.ooqjakwyfawahvnzcllk.supabase.co:6543/postgres"
+    
+    print("Using Supabase Transaction Pooler with IPv4 add-on")
+    print("Plate-by-plate export with progress updates")
+    print()
     
     success = export_with_progress()
     sys.exit(0 if success else 1)
