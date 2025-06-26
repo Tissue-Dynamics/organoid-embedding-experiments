@@ -30,29 +30,73 @@ class DataLoader:
     
     conn: Optional[duckdb.DuckDBPyConnection]
     
-    def __init__(self, database_url: Optional[str] = None):
+    def __init__(self, database_url: Optional[str] = None, use_local: Optional[bool] = None):
         """
         Initialize data loader with database connection.
         
         Args:
             database_url: PostgreSQL connection string. If None, uses DATABASE_URL env var.
+            use_local: If True, use local DuckDB file. If False, use remote PostgreSQL.
+                      If None (default), use local if available, otherwise remote.
         """
         self.database_url = database_url or os.getenv('DATABASE_URL')
-        if not self.database_url:
-            raise ValueError("DATABASE_URL not provided or set in environment")
-        
         self.conn = None
-        self._connect()
+        self.is_local = False
+        
+        # Determine which database to use
+        local_db_path = Path("data/database/organoid_data.duckdb")
+        local_sample_path = Path("data/database/organoid_data_sample.duckdb")
+        
+        if use_local is True:
+            # Explicitly use local
+            if local_db_path.exists():
+                self._connect_local(local_db_path)
+            elif local_sample_path.exists():
+                print("Note: Using sample database. Full database not found.")
+                self._connect_local(local_sample_path)
+            else:
+                raise ValueError("Local database file not found. Run export_to_duckdb.py first.")
+        elif use_local is False:
+            # Explicitly use remote
+            if not self.database_url:
+                raise ValueError("DATABASE_URL not provided or set in environment")
+            self._connect_remote()
+        else:
+            # Auto-detect (default behavior)
+            if local_db_path.exists():
+                print("Using local database file.")
+                self._connect_local(local_db_path)
+            elif local_sample_path.exists():
+                print("Using local sample database file.")
+                self._connect_local(local_sample_path)
+            elif self.database_url:
+                print("Using remote PostgreSQL database.")
+                self._connect_remote()
+            else:
+                raise ValueError("No database available. Set DATABASE_URL or create local database.")
     
-    def _connect(self):
-        """Establish database connection via DuckDB."""
+    def _connect_local(self, db_path: Path):
+        """Connect to local DuckDB file."""
+        self.conn = duckdb.connect(str(db_path))
+        self.is_local = True
+        assert self.conn is not None
+    
+    def _connect_remote(self):
+        """Establish database connection via DuckDB to PostgreSQL."""
         self.conn = duckdb.connect(':memory:')
         assert self.conn is not None
         self.conn.execute(f"ATTACH '{self.database_url}' AS db (TYPE postgres)")
+        self.is_local = False
     
     def _execute_and_convert(self, query: str) -> pd.DataFrame:
         """Execute query and convert UUIDs to strings for compatibility."""
         assert self.conn is not None, "Database connection not established"
+        
+        # Adjust query for local vs remote database
+        if self.is_local:
+            # Remove db.public. prefix for local database
+            query = query.replace("db.public.", "")
+        
         df = self.conn.execute(query).df()
         
         # Convert UUID columns to strings

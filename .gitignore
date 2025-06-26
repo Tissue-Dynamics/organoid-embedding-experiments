@@ -35,6 +35,10 @@ venv/
 *.parquet
 !results/**/*.parquet
 
+# Local database files
+*.duckdb
+*.duckdb.wal
+
 # UV lock file
 uv.lock
 
