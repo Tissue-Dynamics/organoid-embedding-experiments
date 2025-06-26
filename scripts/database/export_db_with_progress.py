@@ -61,7 +61,14 @@ def export_with_progress():
                 ("drugs", "SELECT * FROM db.public.drugs"),
                 ("event_table", "SELECT * FROM db.public.event_table"),
                 ("well_map_data", "SELECT * FROM db.public.well_map_data"),
-                ("plate_table", "SELECT * FROM db.public.plate_table"),
+                ("plate_table", """
+                    SELECT 
+                        id, name, created_at, updated_at, created_by, 
+                        deleted, status, state, tissue, description,
+                        array_to_string(plate_size, 'x') as plate_size,
+                        qc_values, qc_thresholds, internal_notes
+                    FROM db.public.plate_table
+                """),
             ]
             
             # Export small tables
