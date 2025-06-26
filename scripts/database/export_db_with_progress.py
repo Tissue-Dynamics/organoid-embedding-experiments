@@ -124,7 +124,8 @@ def export_with_progress():
                 
                 # Create table structure
                 print("Creating table structure...", end=' ', flush=True)
-                # Create table with explicit schema to avoid type issues
+                # Create table with explicit schema
+                # Use VARCHAR for columns that might have mixed types or '<NA>' values
                 create_table_query = """
                     CREATE TABLE processed_data (
                         id BIGINT,
@@ -135,8 +136,8 @@ def export_with_progress():
                         cycle_time_stamp TIMESTAMP WITH TIME ZONE,
                         cycle_num SMALLINT,
                         is_excluded BOOLEAN,
-                        exclusion_reason INTEGER,
-                        excluded_by INTEGER,
+                        exclusion_reason VARCHAR,  -- Changed to VARCHAR to handle '<NA>' and other strings
+                        excluded_by VARCHAR,       -- Changed to VARCHAR to handle '<NA>' and other strings
                         excluded_at TIMESTAMP WITH TIME ZONE
                     )
                 """
