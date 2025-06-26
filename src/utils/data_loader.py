@@ -104,8 +104,10 @@ class DataLoader:
             if df[col].dtype == 'object' and len(df) > 0:
                 # Check if first non-null value is UUID
                 first_val = df[col].dropna().iloc[0] if not df[col].dropna().empty else None
-                if first_val and hasattr(first_val, 'hex'):  # UUID type
-                    df[col] = df[col].astype(str)
+                # Skip numpy arrays and other non-scalar types
+                if first_val is not None and not hasattr(first_val, '__len__'):
+                    if hasattr(first_val, 'hex'):  # UUID type
+                        df[col] = df[col].astype(str)
         
         return df
     

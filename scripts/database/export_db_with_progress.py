@@ -121,14 +121,27 @@ def export_with_progress():
             print("-" * 80)
             
             try:
-                # Skip the slow COUNT query - just get plates
-                print("Getting plate list (without counting all rows)...")
+                # Get plate list from plate_table which should be much faster
+                print("Getting plate list from plate_table...")
                 plates_query = """
-                    SELECT DISTINCT plate_id
-                    FROM db.public.processed_data 
-                    ORDER BY plate_id
+                    SELECT DISTINCT p.id as plate_id
+                    FROM db.public.plate_table p
+                    WHERE EXISTS (
+                        SELECT 1 FROM db.public.processed_data pd 
+                        WHERE pd.plate_id = p.id 
+                        LIMIT 1
+                    )
+                    ORDER BY p.id
                 """
-                plates_df = loader._execute_and_convert(plates_query)
+                
+                # If that's still slow, just get all plates from plate_table
+                try:
+                    plates_df = loader._execute_and_convert(plates_query)
+                except:
+                    print("  Falling back to simple plate list...")
+                    plates_query = "SELECT id as plate_id FROM db.public.plate_table ORDER BY id"
+                    plates_df = loader._execute_and_convert(plates_query)
+                
                 num_plates = len(plates_df)
                 print(f"Found {num_plates} plates to export\n")
                 
