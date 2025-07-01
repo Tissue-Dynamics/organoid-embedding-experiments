@@ -136,5 +136,28 @@ ruff check .
 - This ensures immediate verification of results
 - If a script doesn't produce figures, it cannot be verified and should be deleted
 
+**NEVER PUT FILES IN THE ROOT DIRECTORY** - This is absolutely critical:
+- The root directory is for navigation and organization ONLY
+- NO Python scripts should ever be placed in the root directory
+- ALL scripts must go in their proper subdirectories:
+  - `scripts/analysis/` for analysis scripts
+  - `scripts/features/` for feature extraction
+  - `scripts/visualization/` for visualization
+  - `Sandbox/` for temporary/experimental work
+- If you create a file in root by mistake, DELETE IT IMMEDIATELY
+- Root should only contain: README.md, CLAUDE.md, requirements.txt, pyproject.toml, and directories
+
 **File Management Guidelines**:
 - Always delete temporary files or throw-away scripts after you are done using them
+- Keep the project structure clean and organized
+
+## CRITICAL DATA INTERPRETATION NOTE
+
+**OXYGEN DATA INTERPRETATION** - This is absolutely critical for all analysis:
+- The 'o2' column represents **OXYGEN PRESENCE/CONCENTRATION** in the medium
+- **Lower O2 values = Higher oxygen consumption** (cells are consuming more oxygen)
+- **Higher O2 values = Lower oxygen consumption** (cells are consuming less oxygen)
+- **DO NOT confuse this**: It's measuring remaining oxygen, not consumption rate directly
+- **Toxicity interpretation**: Toxic drugs may DECREASE oxygen consumption (higher O2 remaining)
+- **Metabolic activation**: Some drugs may INCREASE oxygen consumption (lower O2 remaining)
+- **Always verify the directionality** when interpreting oxygen consumption changes
