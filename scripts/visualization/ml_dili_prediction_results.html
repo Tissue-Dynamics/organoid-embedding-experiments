@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML DILI Prediction Results</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .chart-container {
+            display: flex;
+            justify-content: space-between;
+            height: 700px;
+        }
+        
+        .performance-chart {
+            width: 700px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .metrics-summary {
+            width: 450px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .bar {
+            cursor: pointer;
+        }
+        
+        .bar:hover {
+            opacity: 0.8;
+        }
+        
+        .axis {
+            font-size: 12px;
+        }
+        
+        .axis-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .legend {
+            font-size: 12px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: white;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .metric-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .metric-value {
+            color: #666;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .best-model {
+            background-color: #e8f5e8;
+            border-left-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Machine Learning DILI Prediction Results</div>
+        
+        <div class="chart-container">
+            <div class="performance-chart">
+                <div class="section-title">Model Performance Comparison (AUC)</div>
+                <svg id="performance-svg" width="660" height="600"></svg>
+            </div>
+            
+            <div class="metrics-summary">
+                <div class="section-title">Performance Summary</div>
+                <div id="metrics-container"></div>
+                
+                <div class="section-title" style="margin-top: 30px;">Key Findings</div>
+                <div style="font-size: 12px; line-height: 1.6; color: #555;">
+                    <p><strong>Best Model:</strong> SVM (RBF) - AUC 0.700</p>
+                    <p><strong>Feature Engineering:</strong> 1650 engineered features from 452 original</p>
+                    <p><strong>Class Balance:</strong> 62.3% DILI positive (61 total drugs)</p>
+                    <p><strong>Top Performers:</strong> Tree-based models (XGBoost, Random Forest)</p>
+                    <p><strong>Key Insight:</strong> Polynomial features capture nonlinear toxicity patterns</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Model performance data
+        const modelData = [
+            { model: "SVM (RBF)", auc: 0.700, std: 0.275, accuracy: 0.771, f1: 0.160 },
+            { model: "XGBoost", auc: 0.670, std: 0.089, accuracy: 0.787, f1: 0.394 },
+            { model: "Naive Bayes", auc: 0.660, std: 0.114, accuracy: 0.803, f1: 0.433 },
+            { model: "Ridge Classifier", auc: 0.645, std: 0.123, accuracy: 0.705, f1: 0.450 },
+            { model: "K-Nearest Neighbors", auc: 0.607, std: 0.148, accuracy: 0.771, f1: 0.000 },
+            { model: "Gradient Boosting", auc: 0.599, std: 0.072, accuracy: 0.688, f1: 0.324 },
+            { model: "Random Forest", auc: 0.556, std: 0.183, accuracy: 0.771, f1: 0.160 },
+            { model: "SVM (Linear)", auc: 0.529, std: 0.198, accuracy: 0.738, f1: 0.397 },
+            { model: "Neural Network", auc: 0.522, std: 0.319, accuracy: 0.587, f1: 0.359 },
+            { model: "Extra Trees", auc: 0.511, std: 0.185, accuracy: 0.772, f1: 0.167 },
+            { model: "Logistic Regression", auc: 0.429, std: 0.296, accuracy: 0.622, f1: 0.280 }
+        ];
+
+        // Sort by AUC descending
+        modelData.sort((a, b) => b.auc - a.auc);
+
+        // Create SVG
+        const svg = d3.select("#performance-svg");
+        const margin = { top: 20, right: 30, bottom: 150, left: 80 };
+        const width = 660 - margin.left - margin.right;
+        const height = 600 - margin.top - margin.bottom;
+
+        const g = svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Scales
+        const xScale = d3.scaleBand()
+            .domain(modelData.map(d => d.model))
+            .range([0, width])
+            .padding(0.2);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, 1])
+            .range([height, 0]);
+
+        // Color scale
+        const colorScale = d3.scaleSequential(d3.interpolateViridis)
+            .domain([0, modelData.length - 1]);
+
+        // Create bars
+        g.selectAll(".bar")
+            .data(modelData)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", d => xScale(d.model))
+            .attr("width", xScale.bandwidth())
+            .attr("y", d => yScale(d.auc))
+            .attr("height", d => height - yScale(d.auc))
+            .attr("fill", (d, i) => colorScale(i))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1);
+
+        // Add error bars
+        g.selectAll(".error-bar")
+            .data(modelData)
+            .enter().append("line")
+            .attr("class", "error-bar")
+            .attr("x1", d => xScale(d.model) + xScale.bandwidth() / 2)
+            .attr("x2", d => xScale(d.model) + xScale.bandwidth() / 2)
+            .attr("y1", d => yScale(Math.max(0, d.auc - d.std)))
+            .attr("y2", d => yScale(Math.min(1, d.auc + d.std)))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 2);
+
+        // Add caps to error bars
+        g.selectAll(".error-cap-top")
+            .data(modelData)
+            .enter().append("line")
+            .attr("class", "error-cap-top")
+            .attr("x1", d => xScale(d.model) + xScale.bandwidth() / 2 - 5)
+            .attr("x2", d => xScale(d.model) + xScale.bandwidth() / 2 + 5)
+            .attr("y1", d => yScale(Math.min(1, d.auc + d.std)))
+            .attr("y2", d => yScale(Math.min(1, d.auc + d.std)))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 2);
+
+        g.selectAll(".error-cap-bottom")
+            .data(modelData)
+            .enter().append("line")
+            .attr("class", "error-cap-bottom")
+            .attr("x1", d => xScale(d.model) + xScale.bandwidth() / 2 - 5)
+            .attr("x2", d => xScale(d.model) + xScale.bandwidth() / 2 + 5)
+            .attr("y1", d => yScale(Math.max(0, d.auc - d.std)))
+            .attr("y2", d => yScale(Math.max(0, d.auc - d.std)))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 2);
+
+        // Add value labels on bars
+        g.selectAll(".value-label")
+            .data(modelData)
+            .enter().append("text")
+            .attr("class", "value-label")
+            .attr("x", d => xScale(d.model) + xScale.bandwidth() / 2)
+            .attr("y", d => yScale(d.auc) - 5)
+            .attr("text-anchor", "middle")
+            .style("font-size", "11px")
+            .style("font-weight", "bold")
+            .style("fill", "#333")
+            .text(d => d.auc.toFixed(3));
+
+        // X axis
+        g.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(xScale))
+            .selectAll("text")
+            .attr("transform", "rotate(-45)")
+            .style("text-anchor", "end")
+            .style("font-size", "11px");
+
+        // Y axis
+        g.append("g")
+            .attr("class", "axis")
+            .call(d3.axisLeft(yScale).ticks(10).tickFormat(d3.format(".2f")));
+
+        // Y axis label
+        g.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("AUC Score");
+
+        // X axis label
+        g.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
+            .style("text-anchor", "middle")
+            .text("ML Models");
+
+        // Reference line at AUC = 0.5
+        g.append("line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", yScale(0.5))
+            .attr("y2", yScale(0.5))
+            .attr("stroke", "#e74c3c")
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "5,5");
+
+        g.append("text")
+            .attr("x", width - 5)
+            .attr("y", yScale(0.5) - 5)
+            .attr("text-anchor", "end")
+            .style("font-size", "11px")
+            .style("fill", "#e74c3c")
+            .text("Random Baseline (0.5)");
+
+        // Create metrics summary
+        const metricsContainer = d3.select("#metrics-container");
+        
+        modelData.slice(0, 5).forEach((d, i) => {
+            const row = metricsContainer.append("div")
+                .attr("class", i === 0 ? "metric-row best-model" : "metric-row");
+            
+            row.append("div")
+                .attr("class", "metric-name")
+                .text(d.model);
+            
+            row.append("div")
+                .attr("class", "metric-value")
+                .html(`AUC: ${d.auc.toFixed(3)}±${d.std.toFixed(3)}<br>Acc: ${d.accuracy.toFixed(3)}, F1: ${d.f1.toFixed(3)}`);
+        });
+
+        console.log("ML DILI Prediction Results visualization loaded successfully");
+    </script>
+</body>
+</html>

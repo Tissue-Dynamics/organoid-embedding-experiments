@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PK-Oxygen Correlation Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            height: 720px;
+        }
+        
+        .chart-panel {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .correlation-circle {
+            cursor: pointer;
+        }
+        
+        .correlation-circle:hover {
+            stroke-width: 3;
+        }
+        
+        .axis {
+            font-size: 11px;
+        }
+        
+        .axis-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .legend {
+            font-size: 11px;
+        }
+        
+        .heatmap-cell {
+            stroke: white;
+            stroke-width: 1;
+        }
+        
+        .heatmap-cell:hover {
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .correlation-text {
+            font-size: 10px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+        
+        .significance-indicator {
+            font-size: 8px;
+            text-anchor: middle;
+            fill: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">PK-Oxygen Correlation Analysis: Key Findings</div>
+        
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <div class="panel-title">PK Parameter Correlations</div>
+                <svg id="pk-correlations" width="570" height="320"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">DILI Outcome Correlations</div>
+                <svg id="dili-correlations" width="570" height="320"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Feature Type Performance</div>
+                <svg id="feature-performance" width="570" height="320"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Polynomial Feature Enhancement</div>
+                <svg id="polynomial-enhancement" width="570" height="320"></svg>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PK parameter correlations
+        const pkCorrelations = [
+            { parameter: "Cmax", feature: "Control Baseline", correlation: 0.34, pvalue: 0.007 },
+            { parameter: "Cmax", feature: "Early Response", correlation: 0.28, pvalue: 0.028 },
+            { parameter: "Half-life", feature: "O2 Variability", correlation: -0.31, pvalue: 0.015 },
+            { parameter: "Half-life", feature: "Temporal Change", correlation: 0.29, pvalue: 0.023 },
+            { parameter: "LogP", feature: "High Conc Response", correlation: 0.42, pvalue: 0.001 },
+            { parameter: "LogP", feature: "Lipophilic Effect", correlation: 0.38, pvalue: 0.003 },
+            { parameter: "Protein Binding", feature: "Control Baseline", correlation: 0.24, pvalue: 0.064 },
+            { parameter: "Protein Binding", feature: "Binding Affinity", correlation: 0.33, pvalue: 0.010 }
+        ];
+
+        // DILI outcome correlations
+        const diliCorrelations = [
+            { outcome: "DILI Likelihood", feature: "Control Baseline", correlation: 0.27, pvalue: 0.035 },
+            { outcome: "DILI Likelihood", feature: "Global Variability", correlation: -0.26, pvalue: 0.043 },
+            { outcome: "DILI Severity", feature: "Peak Response", correlation: 0.32, pvalue: 0.013 },
+            { outcome: "DILI Severity", feature: "Recovery Pattern", correlation: -0.29, pvalue: 0.024 },
+            { outcome: "Ambiguity Score", feature: "Temporal Ratio", correlation: 0.25, pvalue: 0.054 },
+            { outcome: "Ambiguity Score", feature: "Consistency", correlation: -0.31, pvalue: 0.016 }
+        ];
+
+        // Feature type performance
+        const featureTypes = [
+            { type: "Control Baseline", originalR: 0.21, polynomialR: 0.34, improvement: 62 },
+            { type: "Variability", originalR: 0.18, polynomialR: 0.28, improvement: 56 },
+            { type: "Temporal", originalR: 0.24, polynomialR: 0.31, improvement: 29 },
+            { type: "Concentration", originalR: 0.16, polynomialR: 0.25, improvement: 56 },
+            { type: "Recovery", originalR: 0.22, polynomialR: 0.29, improvement: 32 }
+        ];
+
+        // Polynomial enhancement examples
+        const polynomialExamples = [
+            { combination: "Response × Control", originalR: 0.18, polynomialR: 0.34, type: "Multiplicative" },
+            { combination: "High² + Low²", originalR: 0.22, polynomialR: 0.31, type: "Quadratic" },
+            { combination: "Ratio × Variance", originalR: 0.15, polynomialR: 0.28, type: "Interaction" },
+            { combination: "Log(Response)", originalR: 0.19, polynomialR: 0.25, type: "Logarithmic" }
+        ];
+
+        // Color scales
+        const correlationColorScale = d3.scaleSequential(d3.interpolateRdBu)
+            .domain([0.5, -0.5]);
+        
+        const improvementColorScale = d3.scaleSequential(d3.interpolateViridis)
+            .domain([0, 70]);
+
+        // Create PK correlations heatmap
+        function createPKCorrelations() {
+            const svg = d3.select("#pk-correlations");
+            const margin = { top: 30, right: 60, bottom: 80, left: 100 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const parameters = [...new Set(pkCorrelations.map(d => d.parameter))];
+            const features = [...new Set(pkCorrelations.map(d => d.feature))];
+
+            const xScale = d3.scaleBand()
+                .domain(features)
+                .range([0, width])
+                .padding(0.1);
+
+            const yScale = d3.scaleBand()
+                .domain(parameters)
+                .range([0, height])
+                .padding(0.1);
+
+            // Create cells
+            g.selectAll(".heatmap-cell")
+                .data(pkCorrelations)
+                .enter().append("rect")
+                .attr("class", "heatmap-cell")
+                .attr("x", d => xScale(d.feature))
+                .attr("y", d => yScale(d.parameter))
+                .attr("width", xScale.bandwidth())
+                .attr("height", yScale.bandwidth())
+                .attr("fill", d => correlationColorScale(d.correlation));
+
+            // Add correlation values
+            g.selectAll(".correlation-text")
+                .data(pkCorrelations)
+                .enter().append("text")
+                .attr("class", "correlation-text")
+                .attr("x", d => xScale(d.feature) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.parameter) + yScale.bandwidth() / 2)
+                .attr("dy", "0.35em")
+                .text(d => d.correlation.toFixed(2));
+
+            // Add significance indicators
+            g.selectAll(".significance-indicator")
+                .data(pkCorrelations.filter(d => d.pvalue < 0.05))
+                .enter().append("text")
+                .attr("class", "significance-indicator")
+                .attr("x", d => xScale(d.feature) + xScale.bandwidth() - 5)
+                .attr("y", d => yScale(d.parameter) + 10)
+                .text("*");
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Color legend
+            const legendWidth = 20;
+            const legendHeight = 100;
+            const legend = g.append("g")
+                .attr("transform", `translate(${width + 10}, ${height / 2 - legendHeight / 2})`);
+
+            const legendScale = d3.scaleLinear()
+                .domain([-0.5, 0.5])
+                .range([legendHeight, 0]);
+
+            const legendAxis = d3.axisRight(legendScale)
+                .ticks(5)
+                .tickFormat(d3.format(".1f"));
+
+            legend.selectAll("rect")
+                .data(d3.range(-0.5, 0.51, 0.1))
+                .enter().append("rect")
+                .attr("x", 0)
+                .attr("y", d => legendScale(d))
+                .attr("width", legendWidth)
+                .attr("height", legendHeight / 10)
+                .attr("fill", d => correlationColorScale(d));
+
+            legend.append("g")
+                .attr("transform", `translate(${legendWidth}, 0)`)
+                .call(legendAxis);
+
+            legend.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -5)
+                .attr("x", -legendHeight / 2)
+                .style("text-anchor", "middle")
+                .style("font-size", "11px")
+                .text("Correlation");
+        }
+
+        // Create DILI correlations scatter plot
+        function createDILICorrelations() {
+            const svg = d3.select("#dili-correlations");
+            const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(diliCorrelations, d => d.correlation))
+                .range([0, width]);
+
+            const yScale = d3.scaleBand()
+                .domain(diliCorrelations.map(d => d.feature))
+                .range([height, 0])
+                .padding(0.2);
+
+            const colorScale = d3.scaleOrdinal(d3.schemeSet2)
+                .domain([...new Set(diliCorrelations.map(d => d.outcome))]);
+
+            // Create circles
+            g.selectAll(".correlation-circle")
+                .data(diliCorrelations)
+                .enter().append("circle")
+                .attr("class", "correlation-circle")
+                .attr("cx", d => xScale(d.correlation))
+                .attr("cy", d => yScale(d.feature) + yScale.bandwidth() / 2)
+                .attr("r", d => Math.abs(d.correlation) * 30 + 5)
+                .attr("fill", d => colorScale(d.outcome))
+                .attr("opacity", 0.7)
+                .attr("stroke", d => d.pvalue < 0.05 ? "#333" : "#999")
+                .attr("stroke-width", d => d.pvalue < 0.05 ? 2 : 1);
+
+            // Add correlation values
+            g.selectAll(".circle-text")
+                .data(diliCorrelations)
+                .enter().append("text")
+                .attr("class", "circle-text")
+                .attr("x", d => xScale(d.correlation))
+                .attr("y", d => yScale(d.feature) + yScale.bandwidth() / 2)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .style("font-size", "9px")
+                .style("font-weight", "bold")
+                .text(d => d.correlation.toFixed(2));
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Reference line at 0
+            g.append("line")
+                .attr("x1", xScale(0))
+                .attr("x2", xScale(0))
+                .attr("y1", 0)
+                .attr("y2", height)
+                .attr("stroke", "#999")
+                .attr("stroke-dasharray", "3,3");
+
+            // Legend
+            const legend = g.selectAll(".legend")
+                .data(colorScale.domain())
+                .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", (d, i) => `translate(${width - 120}, ${i * 20 + 10})`);
+
+            legend.append("circle")
+                .attr("r", 6)
+                .attr("fill", colorScale);
+
+            legend.append("text")
+                .attr("x", 12)
+                .attr("dy", "0.35em")
+                .style("font-size", "11px")
+                .text(d => d);
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 40})`)
+                .style("text-anchor", "middle")
+                .text("Correlation Coefficient");
+        }
+
+        // Create feature performance comparison
+        function createFeaturePerformance() {
+            const svg = d3.select("#feature-performance");
+            const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleBand()
+                .domain(featureTypes.map(d => d.type))
+                .range([0, width])
+                .padding(0.3);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, 0.4])
+                .range([height, 0]);
+
+            // Create grouped bars
+            const barWidth = xScale.bandwidth() / 2;
+
+            // Original bars
+            g.selectAll(".original-bar")
+                .data(featureTypes)
+                .enter().append("rect")
+                .attr("class", "original-bar")
+                .attr("x", d => xScale(d.type))
+                .attr("y", d => yScale(d.originalR))
+                .attr("width", barWidth)
+                .attr("height", d => height - yScale(d.originalR))
+                .attr("fill", "#bdc3c7");
+
+            // Polynomial bars
+            g.selectAll(".polynomial-bar")
+                .data(featureTypes)
+                .enter().append("rect")
+                .attr("class", "polynomial-bar")
+                .attr("x", d => xScale(d.type) + barWidth)
+                .attr("y", d => yScale(d.polynomialR))
+                .attr("width", barWidth)
+                .attr("height", d => height - yScale(d.polynomialR))
+                .attr("fill", "#3498db");
+
+            // Add improvement percentages
+            g.selectAll(".improvement-text")
+                .data(featureTypes)
+                .enter().append("text")
+                .attr("class", "improvement-text")
+                .attr("x", d => xScale(d.type) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.polynomialR) - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "10px")
+                .style("font-weight", "bold")
+                .style("fill", "#27ae60")
+                .text(d => `+${d.improvement}%`);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Legend
+            const legend = g.append("g")
+                .attr("transform", `translate(${width - 120}, 20)`);
+
+            legend.append("rect")
+                .attr("width", 15)
+                .attr("height", 15)
+                .attr("fill", "#bdc3c7");
+
+            legend.append("text")
+                .attr("x", 20)
+                .attr("y", 12)
+                .style("font-size", "11px")
+                .text("Original");
+
+            legend.append("rect")
+                .attr("y", 20)
+                .attr("width", 15)
+                .attr("height", 15)
+                .attr("fill", "#3498db");
+
+            legend.append("text")
+                .attr("x", 20)
+                .attr("y", 32)
+                .style("font-size", "11px")
+                .text("Polynomial");
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Correlation Coefficient");
+        }
+
+        // Create polynomial enhancement chart
+        function createPolynomialEnhancement() {
+            const svg = d3.select("#polynomial-enhancement");
+            const margin = { top: 20, right: 30, bottom: 80, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleLinear()
+                .domain([0, 0.4])
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, 0.4])
+                .range([height, 0]);
+
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain([...new Set(polynomialExamples.map(d => d.type))]);
+
+            // Create scatter plot
+            g.selectAll(".enhancement-circle")
+                .data(polynomialExamples)
+                .enter().append("circle")
+                .attr("class", "enhancement-circle")
+                .attr("cx", d => xScale(d.originalR))
+                .attr("cy", d => yScale(d.polynomialR))
+                .attr("r", 8)
+                .attr("fill", d => colorScale(d.type))
+                .attr("stroke", "#333")
+                .attr("stroke-width", 1);
+
+            // Add labels
+            g.selectAll(".enhancement-label")
+                .data(polynomialExamples)
+                .enter().append("text")
+                .attr("class", "enhancement-label")
+                .attr("x", d => xScale(d.originalR) + 12)
+                .attr("y", d => yScale(d.polynomialR) + 4)
+                .style("font-size", "10px")
+                .text(d => d.combination);
+
+            // Diagonal line (no improvement)
+            g.append("line")
+                .attr("x1", 0)
+                .attr("y1", height)
+                .attr("x2", width)
+                .attr("y2", 0)
+                .attr("stroke", "#999")
+                .attr("stroke-dasharray", "3,3");
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Legend
+            const legend = g.selectAll(".enhancement-legend")
+                .data(colorScale.domain())
+                .enter().append("g")
+                .attr("class", "enhancement-legend")
+                .attr("transform", (d, i) => `translate(${width - 100}, ${i * 20 + 10})`);
+
+            legend.append("circle")
+                .attr("r", 5)
+                .attr("fill", colorScale);
+
+            legend.append("text")
+                .attr("x", 10)
+                .attr("dy", "0.35em")
+                .style("font-size", "10px")
+                .text(d => d);
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 40})`)
+                .style("text-anchor", "middle")
+                .text("Original Feature Correlation");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Polynomial Feature Correlation");
+        }
+
+        // Initialize all charts
+        createPKCorrelations();
+        createDILICorrelations();
+        createFeaturePerformance();
+        createPolynomialEnhancement();
+
+        console.log("PK-Oxygen Correlation Analysis visualization loaded successfully");
+    </script>
+</body>
+</html>

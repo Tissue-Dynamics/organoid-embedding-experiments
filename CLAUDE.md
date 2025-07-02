@@ -25,18 +25,15 @@ See `docs/COMPREHENSIVE_DILI_ANALYSIS_LESSONS_LEARNED.md` for detailed documenta
 ├── src/                    # Reusable modules and libraries
 │   └── utils/             # Utility functions (data loading, etc.)
 ├── scripts/                # Executable scripts (run these!)
-│   ├── analysis/          # DILI correlation and prediction scripts
-│   ├── features/          # Feature extraction scripts
-│   ├── visualization/     # Plotting and validation scripts
-│   ├── database/          # Database interaction scripts
-│   └── experiments/       # Experimental analysis scripts
+│   ├── analysis/          # DILI correlation and prediction scripts (4 essential)
+│   ├── features/          # Feature extraction scripts (1 essential)
+│   ├── visualization/     # HTML + D3.js visualizations
+│   └── database/          # Database interaction scripts (1 essential)
 ├── results/              # Generated outputs
-│   ├── data/            # Processed datasets and models
-│   └── figures/         # Visualizations
-├── archived/             # Previous analysis iterations
-├── docs/                # Documentation and guides
-├── embeddings/           # Embedding method implementations
-├── config/              # Configuration files
+│   ├── data/            # Processed datasets (3 essential files)
+│   ├── figures/         # High-quality PNG visualizations (5 essential)
+│   └── reports/         # Analysis reports and documentation
+├── docs/                # Key documentation (4 essential documents)
 └── tests/               # Unit tests
 
 ```
@@ -150,6 +147,43 @@ ruff check .
 **File Management Guidelines**:
 - Always delete temporary files or throw-away scripts after you are done using them
 - Keep the project structure clean and organized
+
+## Figure Generation Standards
+
+**USE HTML + D3.js FOR ALL FIGURES** - Generate publication-quality figures using web technologies:
+
+### Required Approach
+- **Primary Method**: HTML + D3.js + embedded CSS/JavaScript for all visualizations
+- **Conversion**: Use Puppeteer/Playwright to convert HTML to high-resolution PNG
+- **No matplotlib/seaborn**: Only use web-based visualization for consistency and quality
+
+### Implementation Structure
+```
+scripts/visualization/
+├── figure_name.html          # Standalone HTML with embedded D3.js
+├── html_to_png.js           # Puppeteer conversion script  
+└── generate_figure.py       # Data processing + HTML generation
+```
+
+### HTML Template Requirements
+- **Standalone HTML files** with all CSS and JavaScript embedded
+- **D3.js from CDN** for consistent rendering
+- **Responsive design** with explicit width/height (1200x800px default)
+- **High-quality SVG rendering** for crisp text and lines
+- **Proper fonts**: Arial/Helvetica for scientific publications
+
+### Conversion Standards
+- **High DPI**: deviceScaleFactor: 2 for crisp output
+- **Wait for rendering**: 3+ second delay for D3 animations/loading
+- **Specific element capture**: Screenshot the visualization container, not full page
+- **Error handling**: Console logging and proper error catching
+
+### Quality Requirements
+- **Publication-ready**: Clean, professional appearance
+- **Readable text**: Minimum 12px font size, high contrast
+- **Color scheme**: Colorblind-friendly palettes (viridis, plasma, etc.)
+- **Annotations**: Clear axis labels, legends, and titles
+- **Data integrity**: Accurate representation without distortion
 
 ## CRITICAL DATA INTERPRETATION NOTE
 
