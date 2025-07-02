@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plate Summary Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            height: 720px;
+        }
+        
+        .chart-panel {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .scatter-point {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        
+        .scatter-point:hover {
+            opacity: 1;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .bar {
+            cursor: pointer;
+        }
+        
+        .bar:hover {
+            opacity: 0.8;
+        }
+        
+        .axis {
+            font-size: 11px;
+        }
+        
+        .axis-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .summary-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: #f0f8ff;
+            border: 2px solid #3498db;
+            padding: 20px;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px;
+            background-color: white;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .summary-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .summary-value {
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Plate Summary Analysis</div>
+        
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <div class="panel-title">Control Wells vs Total Wells</div>
+                <svg id="control-vs-total" width="570" height="300"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Drug Diversity vs Treatment Wells</div>
+                <svg id="diversity-vs-treatment" width="570" height="300"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">DILI Positive Rate by Plate</div>
+                <svg id="dili-rate-by-plate" width="570" height="300"></svg>
+            </div>
+            
+            <div class="summary-panel">
+                <div class="panel-title">Plate Statistics Summary</div>
+                <div id="plate-summary"></div>
+            </div>
+        </div>
+        
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        // Load data and create visualizations
+        d3.json('data/plate_summary.json').then(function(data) {
+            createControlVsTotal(data.plates);
+            createDiversityVsTreatment(data.plates);
+            createDILIRateByPlate(data.plates);
+            createPlateSummary(data.summary);
+        }).catch(function(error) {
+            console.error('Error loading data:', error);
+            // Fallback with sample data
+            const samplePlates = [
+                { plate_id: 'Plate_001', total_wells: 203, control_wells: 45, treatment_wells: 158, unique_drugs: 8, dili_positive_rate: 85.2 },
+                { plate_id: 'Plate_002', total_wells: 190, control_wells: 42, treatment_wells: 148, unique_drugs: 7, dili_positive_rate: 78.4 },
+                { plate_id: 'Plate_003', total_wells: 215, control_wells: 48, treatment_wells: 167, unique_drugs: 9, dili_positive_rate: 92.1 },
+                { plate_id: 'Plate_004', total_wells: 180, control_wells: 40, treatment_wells: 140, unique_drugs: 6, dili_positive_rate: 71.3 },
+                { plate_id: 'Plate_005', total_wells: 225, control_wells: 50, treatment_wells: 175, unique_drugs: 10, dili_positive_rate: 88.7 }
+            ];
+            
+            const sampleSummary = {
+                mean_wells_per_plate: 203,
+                mean_controls_per_plate: 45,
+                mean_drugs_per_plate: 7.8,
+                mean_dili_rate: 83.1,
+                plate_count: 22
+            };
+            
+            createControlVsTotal(samplePlates);
+            createDiversityVsTreatment(samplePlates);
+            createDILIRateByPlate(samplePlates);
+            createPlateSummary(sampleSummary);
+        });
+
+        function createControlVsTotal(plates) {
+            const svg = d3.select("#control-vs-total");
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(plates, d => d.total_wells))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(plates, d => d.control_wells))
+                .range([height, 0]);
+
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain(d3.extent(plates, d => d.dili_positive_rate));
+
+            // Create scatter points
+            g.selectAll('.scatter-point')
+                .data(plates)
+                .enter().append('circle')
+                .attr('class', 'scatter-point')
+                .attr('cx', d => xScale(d.total_wells))
+                .attr('cy', d => yScale(d.control_wells))
+                .attr('r', 6)
+                .attr('fill', d => colorScale(d.dili_positive_rate))
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Plate: ${d.plate_id}<br>Total Wells: ${d.total_wells}<br>Control Wells: ${d.control_wells}<br>DILI Rate: ${d.dili_positive_rate.toFixed(1)}%`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Add correlation line
+            const regression = calculateLinearRegression(plates.map(d => d.total_wells), plates.map(d => d.control_wells));
+            const xExtent = d3.extent(plates, d => d.total_wells);
+            
+            g.append('line')
+                .attr('x1', xScale(xExtent[0]))
+                .attr('y1', yScale(regression.slope * xExtent[0] + regression.intercept))
+                .attr('x2', xScale(xExtent[1]))
+                .attr('y2', yScale(regression.slope * xExtent[1] + regression.intercept))
+                .attr('stroke', '#e74c3c')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Total Wells per Plate");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Control Wells per Plate");
+
+            // R-squared annotation
+            g.append("text")
+                .attr("x", width - 10)
+                .attr("y", 20)
+                .attr("text-anchor", "end")
+                .style("font-size", "12px")
+                .style("fill", "#e74c3c")
+                .text(`R² = ${regression.rSquared.toFixed(3)}`);
+        }
+
+        function createDiversityVsTreatment(plates) {
+            const svg = d3.select("#diversity-vs-treatment");
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(plates, d => d.treatment_wells))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(plates, d => d.unique_drugs))
+                .range([height, 0]);
+
+            const sizeScale = d3.scaleSqrt()
+                .domain(d3.extent(plates, d => d.total_wells))
+                .range([4, 12]);
+
+            // Create scatter points
+            g.selectAll('.scatter-point')
+                .data(plates)
+                .enter().append('circle')
+                .attr('class', 'scatter-point')
+                .attr('cx', d => xScale(d.treatment_wells))
+                .attr('cy', d => yScale(d.unique_drugs))
+                .attr('r', d => sizeScale(d.total_wells))
+                .attr('fill', '#3498db')
+                .attr('stroke', '#2980b9')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Plate: ${d.plate_id}<br>Treatment Wells: ${d.treatment_wells}<br>Unique Drugs: ${d.unique_drugs}<br>Total Wells: ${d.total_wells}`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Treatment Wells per Plate");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Unique Drugs per Plate");
+
+            // Size legend
+            const legendSizes = [d3.min(plates, d => d.total_wells), d3.max(plates, d => d.total_wells)];
+            const legend = g.append("g")
+                .attr("transform", `translate(${width - 100}, 20)`);
+
+            legend.append("text")
+                .attr("x", 0)
+                .attr("y", 0)
+                .style("font-size", "11px")
+                .style("font-weight", "bold")
+                .text("Total Wells:");
+
+            legendSizes.forEach((size, i) => {
+                legend.append("circle")
+                    .attr("cx", 10)
+                    .attr("cy", 20 + i * 25)
+                    .attr("r", sizeScale(size))
+                    .attr("fill", "#3498db")
+                    .attr("stroke", "#2980b9");
+
+                legend.append("text")
+                    .attr("x", 25)
+                    .attr("y", 25 + i * 25)
+                    .style("font-size", "10px")
+                    .text(size);
+            });
+        }
+
+        function createDILIRateByPlate(plates) {
+            const svg = d3.select("#dili-rate-by-plate");
+            const margin = { top: 20, right: 30, bottom: 80, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Sort plates by DILI rate
+            const sortedPlates = plates.sort((a, b) => b.dili_positive_rate - a.dili_positive_rate);
+
+            const xScale = d3.scaleBand()
+                .domain(sortedPlates.map(d => d.plate_id))
+                .range([0, width])
+                .padding(0.1);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, 100])
+                .range([height, 0]);
+
+            const colorScale = d3.scaleSequential(d3.interpolateRdYlGn)
+                .domain([0, 100]);
+
+            // Create bars
+            g.selectAll('.bar')
+                .data(sortedPlates)
+                .enter().append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => xScale(d.plate_id))
+                .attr('y', d => yScale(d.dili_positive_rate))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => height - yScale(d.dili_positive_rate))
+                .attr('fill', d => colorScale(d.dili_positive_rate))
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Plate: ${d.plate_id}<br>DILI Positive Rate: ${d.dili_positive_rate.toFixed(1)}%<br>Total Wells: ${d.total_wells}`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Add value labels
+            g.selectAll('.value-label')
+                .data(sortedPlates)
+                .enter().append('text')
+                .attr('class', 'value-label')
+                .attr('x', d => xScale(d.plate_id) + xScale.bandwidth() / 2)
+                .attr('y', d => yScale(d.dili_positive_rate) - 5)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '10px')
+                .style('font-weight', 'bold')
+                .text(d => `${d.dili_positive_rate.toFixed(0)}%`);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end")
+                .style("font-size", "10px");
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 60})`)
+                .style("text-anchor", "middle")
+                .text("Plate ID");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("DILI Positive Rate (%)");
+
+            // Average line
+            const meanDILI = d3.mean(plates, d => d.dili_positive_rate);
+            g.append('line')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', yScale(meanDILI))
+                .attr('y2', yScale(meanDILI))
+                .attr('stroke', '#e74c3c')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
+
+            g.append('text')
+                .attr('x', width - 5)
+                .attr('y', yScale(meanDILI) - 5)
+                .attr('text-anchor', 'end')
+                .style('font-size', '11px')
+                .style('fill', '#e74c3c')
+                .text(`Mean: ${meanDILI.toFixed(1)}%`);
+        }
+
+        function createPlateSummary(summary) {
+            const container = d3.select("#plate-summary");
+            
+            const stats = [
+                { label: "Total Plates", value: summary.plate_count },
+                { label: "Mean Wells per Plate", value: summary.mean_wells_per_plate.toFixed(0) },
+                { label: "Mean Controls per Plate", value: summary.mean_controls_per_plate.toFixed(0) },
+                { label: "Mean Drugs per Plate", value: summary.mean_drugs_per_plate.toFixed(1) },
+                { label: "Mean DILI Positive Rate", value: `${summary.mean_dili_rate.toFixed(1)}%` }
+            ];
+
+            stats.forEach(stat => {
+                const statDiv = container.append("div")
+                    .attr("class", "summary-item");
+
+                statDiv.append("div")
+                    .attr("class", "summary-label")
+                    .text(stat.label);
+
+                statDiv.append("div")
+                    .attr("class", "summary-value")
+                    .text(stat.value);
+            });
+        }
+
+        function showTooltip(event, content) {
+            const tooltip = d3.select("#tooltip");
+            tooltip.style("opacity", 1)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px")
+                .html(content);
+        }
+
+        function hideTooltip() {
+            d3.select("#tooltip").style("opacity", 0);
+        }
+
+        function calculateLinearRegression(xValues, yValues) {
+            const n = xValues.length;
+            const sumX = d3.sum(xValues);
+            const sumY = d3.sum(yValues);
+            const sumXY = d3.sum(xValues.map((x, i) => x * yValues[i]));
+            const sumXX = d3.sum(xValues.map(x => x * x));
+            const sumYY = d3.sum(yValues.map(y => y * y));
+
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            const yMean = sumY / n;
+            const ssTotal = d3.sum(yValues.map(y => (y - yMean) ** 2));
+            const ssResidual = d3.sum(yValues.map((y, i) => (y - (slope * xValues[i] + intercept)) ** 2));
+            const rSquared = 1 - (ssResidual / ssTotal);
+
+            return { slope, intercept, rSquared };
+        }
+
+        console.log("Plate Summary Analysis visualization loaded successfully");
+    </script>
+</body>
+</html>

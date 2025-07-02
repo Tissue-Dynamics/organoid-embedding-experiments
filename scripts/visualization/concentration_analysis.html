@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concentration Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            height: 720px;
+        }
+        
+        .chart-panel {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .histogram-bar {
+            cursor: pointer;
+        }
+        
+        .histogram-bar:hover {
+            opacity: 0.8;
+        }
+        
+        .concentration-bar {
+            cursor: pointer;
+        }
+        
+        .concentration-bar:hover {
+            opacity: 0.8;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .axis {
+            font-size: 11px;
+        }
+        
+        .axis-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .legend {
+            font-size: 11px;
+        }
+        
+        .summary-stats {
+            background-color: #f0f8ff;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .stat-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-value {
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Concentration Analysis</div>
+        
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <div class="panel-title">Log-Scale Concentration Distribution</div>
+                <svg id="log-concentration" width="570" height="280"></svg>
+                <div class="summary-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Concentration Range:</span>
+                        <span class="stat-value" id="conc-range">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Median Concentration:</span>
+                        <span class="stat-value" id="median-conc">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Unique Concentrations:</span>
+                        <span class="stat-value" id="unique-conc">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Concentration by DILI Status</div>
+                <svg id="concentration-by-dili" width="570" height="320"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Concentration Levels per Drug (Top 20)</div>
+                <svg id="concentration-levels" width="570" height="320"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Wells per Concentration</div>
+                <svg id="wells-per-concentration" width="570" height="320"></svg>
+            </div>
+        </div>
+        
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        // Load data and create visualizations
+        d3.json('data/concentration_analysis.json').then(function(data) {
+            createLogConcentrationDistribution(data.concentration_distribution);
+            createConcentrationByDILI(data.concentrations_by_dili);
+            createConcentrationLevels(data.concentration_levels_per_drug);
+            createWellsPerConcentration(data.wells_per_concentration);
+        }).catch(function(error) {
+            console.error('Error loading data:', error);
+            // Fallback with sample data
+            const sampleData = {
+                concentration_distribution: {
+                    log_concentrations: Array.from({length: 1000}, () => Math.random() * 6 - 3),
+                    min_conc: 0.001,
+                    max_conc: 1000,
+                    median_conc: 10,
+                    unique_concentrations: 48
+                },
+                concentrations_by_dili: [
+                    { dili_status: 'DILI Positive', log_concentrations: Array.from({length: 800}, () => Math.random() * 6 - 3), count: 2656 },
+                    { dili_status: 'No DILI', log_concentrations: Array.from({length: 200}, () => Math.random() * 6 - 3), count: 683 }
+                ],
+                concentration_levels_per_drug: Array.from({length: 20}, (_, i) => ({
+                    drug: `Drug_${i+1}`,
+                    concentration_levels: 8 - Math.floor(Math.random() * 3),
+                    total_wells: 100 - Math.floor(Math.random() * 50),
+                    dili_status: Math.random() > 0.3 ? 'DILI Positive' : 'No DILI'
+                })),
+                wells_per_concentration: Array.from({length: 10}, (_, i) => ({
+                    concentration: Math.pow(10, i - 5),
+                    well_count: Math.floor(Math.random() * 500 + 50)
+                }))
+            };
+            
+            createLogConcentrationDistribution(sampleData.concentration_distribution);
+            createConcentrationByDILI(sampleData.concentrations_by_dili);
+            createConcentrationLevels(sampleData.concentration_levels_per_drug);
+            createWellsPerConcentration(sampleData.wells_per_concentration);
+        });
+
+        function createLogConcentrationDistribution(data) {
+            const svg = d3.select("#log-concentration");
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 280 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Create histogram bins
+            const histogram = d3.histogram()
+                .domain(d3.extent(data.log_concentrations))
+                .thresholds(20);
+
+            const bins = histogram(data.log_concentrations);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(data.log_concentrations))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(bins, d => d.length)])
+                .range([height, 0]);
+
+            // Create bars
+            g.selectAll('.histogram-bar')
+                .data(bins)
+                .enter().append('rect')
+                .attr('class', 'histogram-bar')
+                .attr('x', d => xScale(d.x0))
+                .attr('y', d => yScale(d.length))
+                .attr('width', d => Math.max(0, xScale(d.x1) - xScale(d.x0) - 1))
+                .attr('height', d => height - yScale(d.length))
+                .attr('fill', '#3498db')
+                .attr('stroke', '#2980b9')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Log Concentration: ${d.x0.toFixed(2)} to ${d.x1.toFixed(2)}<br>Wells: ${d.length}<br>Concentration: ${Math.pow(10, d.x0).toExponential(1)} to ${Math.pow(10, d.x1).toExponential(1)} µM`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Add median line
+            const medianLog = Math.log10(data.median_conc);
+            g.append('line')
+                .attr('x1', xScale(medianLog))
+                .attr('x2', xScale(medianLog))
+                .attr('y1', 0)
+                .attr('y2', height)
+                .attr('stroke', '#e74c3c')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
+
+            g.append('text')
+                .attr('x', xScale(medianLog) + 5)
+                .attr('y', 15)
+                .style('font-size', '11px')
+                .style('fill', '#e74c3c')
+                .text(`Median: ${data.median_conc} µM`);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Log₁₀ Concentration (µM)");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Wells");
+
+            // Update summary stats
+            document.getElementById('conc-range').textContent = `${data.min_conc.toExponential(1)} - ${data.max_conc.toExponential(1)} µM`;
+            document.getElementById('median-conc').textContent = `${data.median_conc} µM`;
+            document.getElementById('unique-conc').textContent = data.unique_concentrations;
+        }
+
+        function createConcentrationByDILI(data) {
+            const svg = d3.select("#concentration-by-dili");
+            const margin = { top: 20, right: 30, bottom: 50, left = 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const colorScale = d3.scaleOrdinal()
+                .domain(['DILI Positive', 'No DILI'])
+                .range(['#e74c3c', '#27ae60']);
+
+            // Combine all concentrations to get common scale
+            const allConcentrations = data.flatMap(d => d.log_concentrations);
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(allConcentrations))
+                .range([0, width]);
+
+            // Create violin plots for each DILI status
+            data.forEach((diliGroup, index) => {
+                const yOffset = index * (height / data.length) + 20;
+                const violinHeight = height / data.length - 40;
+
+                // Create histogram for density
+                const histogram = d3.histogram()
+                    .domain(xScale.domain())
+                    .thresholds(30);
+
+                const bins = histogram(diliGroup.log_concentrations);
+                const maxDensity = d3.max(bins, d => d.length);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, maxDensity])
+                    .range([0, violinHeight / 2]);
+
+                // Create violin shape (top half)
+                const area = d3.area()
+                    .x(d => xScale((d.x0 + d.x1) / 2))
+                    .y0(yOffset + violinHeight / 2)
+                    .y1(d => yOffset + violinHeight / 2 - yScale(d.length))
+                    .curve(d3.curveBasis);
+
+                g.append('path')
+                    .datum(bins)
+                    .attr('d', area)
+                    .attr('fill', colorScale(diliGroup.dili_status))
+                    .attr('opacity', 0.7)
+                    .attr('stroke', colorScale(diliGroup.dili_status))
+                    .attr('stroke-width', 1);
+
+                // Create violin shape (bottom half - mirror)
+                const areaMirror = d3.area()
+                    .x(d => xScale((d.x0 + d.x1) / 2))
+                    .y0(yOffset + violinHeight / 2)
+                    .y1(d => yOffset + violinHeight / 2 + yScale(d.length))
+                    .curve(d3.curveBasis);
+
+                g.append('path')
+                    .datum(bins)
+                    .attr('d', areaMirror)
+                    .attr('fill', colorScale(diliGroup.dili_status))
+                    .attr('opacity', 0.7)
+                    .attr('stroke', colorScale(diliGroup.dili_status))
+                    .attr('stroke-width', 1);
+
+                // Add median line
+                const median = d3.median(diliGroup.log_concentrations);
+                g.append('line')
+                    .attr('x1', xScale(median))
+                    .attr('x2', xScale(median))
+                    .attr('y1', yOffset + 10)
+                    .attr('y2', yOffset + violinHeight - 10)
+                    .attr('stroke', '#333')
+                    .attr('stroke-width', 2);
+
+                // Add label
+                g.append('text')
+                    .attr('x', 10)
+                    .attr('y', yOffset + violinHeight / 2)
+                    .attr('dy', '0.35em')
+                    .style('font-size', '12px')
+                    .style('font-weight', 'bold')
+                    .style('fill', colorScale(diliGroup.dili_status))
+                    .text(`${diliGroup.dili_status} (n=${diliGroup.count})`);
+            });
+
+            // X axis
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            // Axis label
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Log₁₀ Concentration (µM)");
+        }
+
+        function createConcentrationLevels(data) {
+            const svg = d3.select("#concentration-levels");
+            const margin = { top: 20, right: 30, bottom = 80, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Sort by concentration levels
+            data.sort((a, b) => b.concentration_levels - a.concentration_levels);
+
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => d.drug))
+                .range([0, width])
+                .padding(0.1);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.concentration_levels)])
+                .range([height, 0]);
+
+            const colorScale = d3.scaleOrdinal()
+                .domain(['DILI Positive', 'No DILI', 'Unknown'])
+                .range(['#e74c3c', '#27ae60', '#95a5a6']);
+
+            // Create bars
+            g.selectAll('.concentration-bar')
+                .data(data)
+                .enter().append('rect')
+                .attr('class', 'concentration-bar')
+                .attr('x', d => xScale(d.drug))
+                .attr('y', d => yScale(d.concentration_levels))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => height - yScale(d.concentration_levels))
+                .attr('fill', d => colorScale(d.dili_status))
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Drug: ${d.drug}<br>Concentration Levels: ${d.concentration_levels}<br>Total Wells: ${d.total_wells}<br>DILI Status: ${d.dili_status}`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Add value labels
+            g.selectAll('.value-label')
+                .data(data)
+                .enter().append('text')
+                .attr('class', 'value-label')
+                .attr('x', d => xScale(d.drug) + xScale.bandwidth() / 2)
+                .attr('y', d => yScale(d.concentration_levels) - 5)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '10px')
+                .style('font-weight', 'bold')
+                .text(d => d.concentration_levels);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end")
+                .style("font-size", "9px");
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 65})`)
+                .style("text-anchor", "middle")
+                .text("Drug");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Concentration Levels");
+
+            // Legend
+            const legend = g.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width - 120}, 20)`);
+
+            const legendItems = legend.selectAll('.legend-item')
+                .data(colorScale.domain())
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * 18})`);
+
+            legendItems.append('rect')
+                .attr('width', 12)
+                .attr('height', 12)
+                .attr('fill', colorScale);
+
+            legendItems.append('text')
+                .attr('x', 16)
+                .attr('y', 10)
+                .style('font-size', '10px')
+                .text(d => d);
+        }
+
+        function createWellsPerConcentration(data) {
+            const svg = d3.select("#wells-per-concentration");
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Sort by concentration
+            data.sort((a, b) => a.concentration - b.concentration);
+
+            const xScale = d3.scaleLog()
+                .domain(d3.extent(data, d => d.concentration))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.well_count)])
+                .range([height, 0]);
+
+            // Create line
+            const line = d3.line()
+                .x(d => xScale(d.concentration))
+                .y(d => yScale(d.well_count))
+                .curve(d3.curveMonotoneX);
+
+            g.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', '#3498db')
+                .attr('stroke-width', 2)
+                .attr('d', line);
+
+            // Create points
+            g.selectAll('.concentration-point')
+                .data(data)
+                .enter().append('circle')
+                .attr('class', 'concentration-point')
+                .attr('cx', d => xScale(d.concentration))
+                .attr('cy', d => yScale(d.well_count))
+                .attr('r', 4)
+                .attr('fill', '#3498db')
+                .attr('stroke', '#2980b9')
+                .attr('stroke-width', 2)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Concentration: ${d.concentration.toExponential(2)} µM<br>Wells: ${d.well_count}`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d3.format(".0e")));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Concentration (µM, log scale)");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Wells");
+        }
+
+        function showTooltip(event, content) {
+            const tooltip = d3.select("#tooltip");
+            tooltip.style("opacity", 1)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px")
+                .html(content);
+        }
+
+        function hideTooltip() {
+            d3.select("#tooltip").style("opacity", 0);
+        }
+
+        console.log("Concentration Analysis visualization loaded successfully");
+    </script>
+</body>
+</html>

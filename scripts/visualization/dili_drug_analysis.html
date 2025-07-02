@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DILI Drug Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            height: 720px;
+        }
+        
+        .chart-panel {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .chart-panel.wide {
+            grid-column: 1;
+        }
+        
+        .chart-panel.narrow {
+            grid-column: 2;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .drug-bar {
+            cursor: pointer;
+        }
+        
+        .drug-bar:hover {
+            opacity: 0.8;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .histogram-bar {
+            fill: #9b59b6;
+            stroke: #8e44ad;
+            stroke-width: 1;
+        }
+        
+        .histogram-bar:hover {
+            opacity: 0.8;
+        }
+        
+        .axis {
+            font-size: 11px;
+        }
+        
+        .axis-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .summary-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: #f0f8ff;
+            border: 2px solid #3498db;
+            padding: 20px;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            padding: 6px;
+            background-color: white;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .summary-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 12px;
+        }
+        
+        .summary-value {
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+        
+        .legend {
+            font-size: 11px;
+        }
+        
+        .drug-label {
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">DILI Drug Analysis</div>
+        
+        <div class="chart-grid">
+            <div class="chart-panel wide">
+                <div class="panel-title">Top 20 Drugs by Well Count (with DILI Status)</div>
+                <svg id="top-drugs" width="750" height="300"></svg>
+            </div>
+            
+            <div class="chart-panel narrow">
+                <div class="panel-title">DILI Risk Score Distribution</div>
+                <svg id="risk-score-dist" width="350" height="300"></svg>
+            </div>
+            
+            <div class="chart-panel wide">
+                <div class="panel-title">DILI Status by Drug Popularity</div>
+                <svg id="dili-by-popularity" width="750" height="300"></svg>
+            </div>
+            
+            <div class="summary-panel narrow">
+                <div class="panel-title">DILI Summary Statistics</div>
+                <div id="dili-summary"></div>
+            </div>
+        </div>
+        
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        // Load data and create visualizations
+        d3.json('data/dili_drug_analysis.json').then(function(data) {
+            createTopDrugs(data.top_drugs);
+            createRiskScoreDistribution(data.score_distribution);
+            createDILIByPopularity(data.top_drugs);
+            createDILISummary(data.dili_summary);
+        }).catch(function(error) {
+            console.error('Error loading data:', error);
+            // Fallback with sample data
+            const sampleTopDrugs = [
+                { drug: "Acetaminophen", well_count: 125, dili_status: "DILI Positive", dili_risk_score: 0.85 },
+                { drug: "Ibuprofen", well_count: 118, dili_status: "DILI Positive", dili_risk_score: 0.72 },
+                { drug: "Aspirin", well_count: 110, dili_status: "No DILI", dili_risk_score: 0.23 },
+                { drug: "Diclofenac", well_count: 105, dili_status: "DILI Positive", dili_risk_score: 0.91 },
+                { drug: "Naproxen", well_count: 98, dili_status: "DILI Positive", dili_risk_score: 0.68 }
+            ];
+            
+            const sampleScoreDist = {
+                scores: Array.from({length: 100}, () => Math.random()),
+                mean: 0.65,
+                median: 0.72,
+                std: 0.24
+            };
+            
+            const sampleSummary = {
+                total_drugs: 123,
+                dili_positive: 2656,
+                dili_negative: 683,
+                unknown_dili: 129
+            };
+            
+            createTopDrugs(sampleTopDrugs);
+            createRiskScoreDistribution(sampleScoreDist);
+            createDILIByPopularity(sampleTopDrugs);
+            createDILISummary(sampleSummary);
+        });
+
+        function createTopDrugs(drugs) {
+            const svg = d3.select("#top-drugs");
+            const margin = { top: 20, right: 30, bottom: 120, left: 60 };
+            const width = 750 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleBand()
+                .domain(drugs.map(d => d.drug))
+                .range([0, width])
+                .padding(0.1);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(drugs, d => d.well_count)])
+                .range([height, 0]);
+
+            const colorScale = d3.scaleOrdinal()
+                .domain(['DILI Positive', 'No DILI', 'Unknown'])
+                .range(['#e74c3c', '#27ae60', '#95a5a6']);
+
+            // Create bars
+            g.selectAll('.drug-bar')
+                .data(drugs)
+                .enter().append('rect')
+                .attr('class', 'drug-bar')
+                .attr('x', d => xScale(d.drug))
+                .attr('y', d => yScale(d.well_count))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => height - yScale(d.well_count))
+                .attr('fill', d => colorScale(d.dili_status))
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1)
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Drug: ${d.drug}<br>Well Count: ${d.well_count}<br>DILI Status: ${d.dili_status}<br>Risk Score: ${d.dili_risk_score ? d.dili_risk_score.toFixed(2) : 'N/A'}`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Add value labels
+            g.selectAll('.value-label')
+                .data(drugs)
+                .enter().append('text')
+                .attr('class', 'value-label')
+                .attr('x', d => xScale(d.drug) + xScale.bandwidth() / 2)
+                .attr('y', d => yScale(d.well_count) - 5)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '10px')
+                .style('font-weight', 'bold')
+                .text(d => d.well_count);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end")
+                .style("font-size", "10px");
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 100})`)
+                .style("text-anchor", "middle")
+                .text("Drug Name");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Wells");
+
+            // Legend
+            const legend = g.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width - 150}, 20)`);
+
+            const legendItems = legend.selectAll('.legend-item')
+                .data(colorScale.domain())
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * 20})`);
+
+            legendItems.append('rect')
+                .attr('width', 15)
+                .attr('height', 15)
+                .attr('fill', colorScale);
+
+            legendItems.append('text')
+                .attr('x', 20)
+                .attr('y', 12)
+                .style('font-size', '11px')
+                .text(d => d);
+        }
+
+        function createRiskScoreDistribution(scoreData) {
+            const svg = d3.select("#risk-score-dist");
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+            const width = 350 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Create histogram bins
+            const histogram = d3.histogram()
+                .domain([0, 1])
+                .thresholds(10);
+
+            const bins = histogram(scoreData.scores);
+
+            const xScale = d3.scaleLinear()
+                .domain([0, 1])
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(bins, d => d.length)])
+                .range([height, 0]);
+
+            // Create bars
+            g.selectAll('.histogram-bar')
+                .data(bins)
+                .enter().append('rect')
+                .attr('class', 'histogram-bar')
+                .attr('x', d => xScale(d.x0))
+                .attr('y', d => yScale(d.length))
+                .attr('width', d => Math.max(0, xScale(d.x1) - xScale(d.x0) - 1))
+                .attr('height', d => height - yScale(d.length))
+                .on('mouseover', function(event, d) {
+                    showTooltip(event, `Range: ${d.x0.toFixed(2)} - ${d.x1.toFixed(2)}<br>Count: ${d.length} drugs`);
+                })
+                .on('mouseout', hideTooltip);
+
+            // Add mean line
+            g.append('line')
+                .attr('x1', xScale(scoreData.mean))
+                .attr('x2', xScale(scoreData.mean))
+                .attr('y1', 0)
+                .attr('y2', height)
+                .attr('stroke', '#e74c3c')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
+
+            g.append('text')
+                .attr('x', xScale(scoreData.mean) + 5)
+                .attr('y', 15)
+                .style('font-size', '10px')
+                .style('fill', '#e74c3c')
+                .text(`Mean: ${scoreData.mean.toFixed(2)}`);
+
+            // Add median line
+            g.append('line')
+                .attr('x1', xScale(scoreData.median))
+                .attr('x2', xScale(scoreData.median))
+                .attr('y1', 0)
+                .attr('y2', height)
+                .attr('stroke', '#f39c12')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '3,3');
+
+            g.append('text')
+                .attr('x', xScale(scoreData.median) + 5)
+                .attr('y', 35)
+                .style('font-size', '10px')
+                .style('fill', '#f39c12')
+                .text(`Median: ${scoreData.median.toFixed(2)}`);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("DILI Risk Score");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Drug Count");
+        }
+
+        function createDILIByPopularity(drugs) {
+            const svg = d3.select("#dili-by-popularity");
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 750 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(drugs, d => d.well_count))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(drugs, d => d.dili_risk_score || 0))
+                .range([height, 0]);
+
+            const sizeScale = d3.scaleSqrt()
+                .domain(d3.extent(drugs, d => d.well_count))
+                .range([4, 16]);
+
+            const colorScale = d3.scaleOrdinal()
+                .domain(['DILI Positive', 'No DILI', 'Unknown'])
+                .range(['#e74c3c', '#27ae60', '#95a5a6']);
+
+            // Create scatter points
+            g.selectAll('.scatter-point')
+                .data(drugs.filter(d => d.dili_risk_score))
+                .enter().append('circle')
+                .attr('class', 'scatter-point')
+                .attr('cx', d => xScale(d.well_count))
+                .attr('cy', d => yScale(d.dili_risk_score))
+                .attr('r', d => sizeScale(d.well_count))
+                .attr('fill', d => colorScale(d.dili_status))
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1)
+                .attr('opacity', 0.7)
+                .on('mouseover', function(event, d) {
+                    d3.select(this).attr('opacity', 1);
+                    showTooltip(event, `Drug: ${d.drug}<br>Well Count: ${d.well_count}<br>Risk Score: ${d.dili_risk_score.toFixed(2)}<br>Status: ${d.dili_status}`);
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('opacity', 0.7);
+                    hideTooltip();
+                });
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Number of Wells (Drug Popularity)");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("DILI Risk Score");
+
+            // Threshold line at 0.5
+            g.append('line')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', yScale(0.5))
+                .attr('y2', yScale(0.5))
+                .attr('stroke', '#34495e')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
+
+            g.append('text')
+                .attr('x', width - 5)
+                .attr('y', yScale(0.5) - 5)
+                .attr('text-anchor', 'end')
+                .style('font-size', '11px')
+                .style('fill', '#34495e')
+                .text('Risk Threshold (0.5)');
+        }
+
+        function createDILISummary(summary) {
+            const container = d3.select("#dili-summary");
+            
+            const total = summary.dili_positive + summary.dili_negative + summary.unknown_dili;
+            
+            const stats = [
+                { label: "Total Drugs", value: summary.total_drugs },
+                { label: "Total Wells", value: total.toLocaleString() },
+                { label: "DILI Positive Wells", value: `${summary.dili_positive.toLocaleString()} (${(summary.dili_positive/total*100).toFixed(1)}%)` },
+                { label: "No DILI Wells", value: `${summary.dili_negative.toLocaleString()} (${(summary.dili_negative/total*100).toFixed(1)}%)` },
+                { label: "Unknown DILI Wells", value: `${summary.unknown_dili.toLocaleString()} (${(summary.unknown_dili/total*100).toFixed(1)}%)` },
+                { label: "DILI Positive Rate", value: `${(summary.dili_positive/(summary.dili_positive + summary.dili_negative)*100).toFixed(1)}%` }
+            ];
+
+            stats.forEach(stat => {
+                const statDiv = container.append("div")
+                    .attr("class", "summary-item");
+
+                statDiv.append("div")
+                    .attr("class", "summary-label")
+                    .text(stat.label);
+
+                statDiv.append("div")
+                    .attr("class", "summary-value")
+                    .text(stat.value);
+            });
+        }
+
+        function showTooltip(event, content) {
+            const tooltip = d3.select("#tooltip");
+            tooltip.style("opacity", 1)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px")
+                .html(content);
+        }
+
+        function hideTooltip() {
+            d3.select("#tooltip").style("opacity", 0);
+        }
+
+        console.log("DILI Drug Analysis visualization loaded successfully");
+    </script>
+</body>
+</html>

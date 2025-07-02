@@ -6,18 +6,28 @@ Clean, refactored organoid DILI prediction codebase. This project analyzes liver
 
 ## Key Results (Latest Analysis)
 
-- **Dynamic Variability Features**: r=0.473 correlation with DILI likelihood (p=0.003)
-- **Event-Normalized Features**: r=0.477 on 34 drugs, AUROC=0.832
-- **Best Predictors**: Rolling variance features (`rolling_50_mean_std_std`)
-- **Key Insight**: Drug-induced liver injury manifests as increased variability in oxygen consumption patterns
+- **ML Models**: Best AUC 0.700 (SVM-RBF) across 11 models using 1650 engineered features
+- **Polynomial Features**: 34% improvement in DILI correlation (ρ=0.408) over individual features  
+- **PK-Oxygen Integration**: Control baseline × response magnitude most predictive combination
+- **Data Quality**: Only 61/201 drugs have DILI metadata (62.3% positive rate, not 90%)
+- **Key Insight**: Baseline susceptibility + temporal recovery patterns predict DILI risk
 
-## Lessons Learned
+## Next Steps to Reach AUC 0.9
 
-See `docs/COMPREHENSIVE_DILI_ANALYSIS_LESSONS_LEARNED.md` for detailed documentation of:
-- Feature engineering discoveries (dynamic variability > central tendency)
-- Technical best practices (modular design, robust error handling)
-- Experimental design insights (plate effects, randomization issues)
-- Future recommendations (expand rolling variance analysis)
+**Current Performance**: AUC 0.700 → **Target**: AUC 0.900
+
+**Priority Improvements**:
+1. **Advanced Temporal Features**: Rolling window statistics, autocorrelation, recovery patterns
+2. **Event-Aware Modeling**: Media change boundary effects, pre/post event dynamics  
+3. **Deep Learning**: LSTM/GRU for oxygen time series, attention mechanisms
+4. **PK Integration**: Clinical exposure normalization (response/Cmax ratios)
+5. **Ensemble Methods**: Stacking with meta-learners, domain knowledge integration
+
+**Key Insights for Feature Engineering**:
+- **Control × Fold Change**: Best polynomial feature (ρ=0.408, +34% improvement)
+- **Baseline Susceptibility**: Higher control O2 predicts DILI risk
+- **Temporal Recovery**: Recovery patterns > peak effects for prediction
+- **Concentration Gradients**: Dose-response slopes and IC50 estimation needed
 
 ## Project Structure
 
@@ -184,6 +194,18 @@ scripts/visualization/
 - **Color scheme**: Colorblind-friendly palettes (viridis, plasma, etc.)
 - **Annotations**: Clear axis labels, legends, and titles
 - **Data integrity**: Accurate representation without distortion
+
+### Current HTML + D3.js Visualizations
+**Production Figures** (all generated using HTML + D3.js → PNG pipeline):
+- `ml_dili_prediction_analysis.png` - ML model performance comparison
+- `pk_oxygen_final_summary.png` - PK correlation analysis with 4-panel grid
+- `data_quality_verification.png` - Dataset quality and DILI distribution analysis
+- `dataset_overview/dataset_composition.png` - Wells and DILI composition analysis
+- `dataset_overview/plate_summary.png` - Plate-level statistics and correlations
+- `dataset_overview/dili_drug_analysis.png` - Top drugs and risk score distribution
+- `dataset_overview/concentration_analysis.png` - Concentration patterns and DILI status
+
+**Implementation Status**: All 7 core visualizations now use HTML + D3.js standard
 
 ## CRITICAL DATA INTERPRETATION NOTE
 

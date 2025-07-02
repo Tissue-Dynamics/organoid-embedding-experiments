@@ -51,7 +51,7 @@ async function convertHtmlToPng(htmlFilePath, outputPath, options = {}) {
 
         // Wait for D3.js rendering to complete
         console.log(`Waiting ${waitTime}ms for rendering...`);
-        await page.waitForTimeout(waitTime);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
 
         // Check if page loaded correctly
         const title = await page.title();
@@ -139,6 +139,22 @@ async function convertAllVisualizations() {
         {
             input: 'data_quality_verification.html',
             output: 'data_quality_verification.png'
+        },
+        {
+            input: 'dataset_composition.html',
+            output: 'dataset_composition.png'
+        },
+        {
+            input: 'plate_summary.html',
+            output: 'plate_summary.png'
+        },
+        {
+            input: 'dili_drug_analysis.html',
+            output: 'dili_drug_analysis.png'
+        },
+        {
+            input: 'concentration_analysis.html',
+            output: 'concentration_analysis.png'
         }
     ];
 

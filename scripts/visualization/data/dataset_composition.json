@@ -1,0 +1,75 @@
+{
+  "well_composition": {
+    "Treatment": 3468,
+    "Control": 1000
+  },
+  "dili_composition": {
+    "DILI Positive": 2656,
+    "DILI Negative": 812,
+    "Unknown DILI": 0
+  },
+  "wells_per_plate": {
+    "mean": 203.0909090909091,
+    "median": 258.0,
+    "std": 126.70133952421118,
+    "distribution": [
+      352,
+      272,
+      272,
+      48,
+      328,
+      356,
+      328,
+      328,
+      48,
+      48,
+      76,
+      48,
+      136,
+      48,
+      48,
+      76,
+      272,
+      324,
+      164,
+      352,
+      244,
+      300
+    ]
+  },
+  "drugs_per_plate": {
+    "mean": 9.5,
+    "median": 12.0,
+    "std": 3.501700267285132,
+    "distribution": [
+      11,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      12,
+      4,
+      4,
+      12,
+      4,
+      6,
+      4,
+      4,
+      12,
+      12,
+      11,
+      6,
+      11,
+      12,
+      12
+    ]
+  },
+  "summary": {
+    "total_wells": 4468,
+    "total_plates": 22,
+    "unique_drugs": 123,
+    "dili_positive_rate": 76.58592848904267
+  }
+}

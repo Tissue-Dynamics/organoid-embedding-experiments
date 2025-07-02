@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Composition Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: white;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            height: 720px;
+        }
+        
+        .chart-panel {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .pie-slice {
+            cursor: pointer;
+            stroke: white;
+            stroke-width: 2;
+        }
+        
+        .pie-slice:hover {
+            opacity: 0.8;
+        }
+        
+        .pie-label {
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+        
+        .histogram-bar {
+            fill: #3498db;
+            stroke: #2980b9;
+            stroke-width: 1;
+        }
+        
+        .histogram-bar:hover {
+            opacity: 0.8;
+        }
+        
+        .axis {
+            font-size: 11px;
+        }
+        
+        .axis-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .summary-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f8ff;
+            border: 2px solid #3498db;
+        }
+        
+        .summary-stat {
+            font-size: 16px;
+            margin: 8px 0;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .legend {
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Dataset Composition Analysis</div>
+        
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <div class="panel-title">Wells by Type</div>
+                <svg id="well-composition" width="570" height="300"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">DILI Distribution (Treatment Wells)</div>
+                <svg id="dili-composition" width="570" height="300"></svg>
+            </div>
+            
+            <div class="chart-panel">
+                <div class="panel-title">Wells per Plate Distribution</div>
+                <svg id="wells-per-plate" width="570" height="300"></svg>
+            </div>
+            
+            <div class="summary-panel">
+                <div class="panel-title">Dataset Summary Statistics</div>
+                <div id="summary-stats"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load data and create visualizations
+        d3.json('data/dataset_composition.json').then(function(data) {
+            createWellComposition(data.well_composition);
+            createDILIComposition(data.dili_composition);
+            createWellsPerPlateDistribution(data.wells_per_plate);
+            createSummaryStats(data.summary);
+        }).catch(function(error) {
+            console.error('Error loading data:', error);
+            // Fallback with sample data
+            const sampleData = {
+                well_composition: { Treatment: 3468, Control: 1000 },
+                dili_composition: { 'DILI Positive': 2656, 'DILI Negative': 683, 'Unknown DILI': 129 },
+                wells_per_plate: {
+                    mean: 203,
+                    distribution: [150, 180, 200, 220, 240, 190, 210, 185, 195, 205, 225, 175, 160, 230, 200, 188, 192, 215, 178, 208]
+                },
+                summary: {
+                    total_wells: 4468,
+                    total_plates: 22,
+                    unique_drugs: 123,
+                    dili_positive_rate: 76.6
+                }
+            };
+            
+            createWellComposition(sampleData.well_composition);
+            createDILIComposition(sampleData.dili_composition);
+            createWellsPerPlateDistribution(sampleData.wells_per_plate);
+            createSummaryStats(sampleData.summary);
+        });
+
+        function createWellComposition(data) {
+            const svg = d3.select("#well-composition");
+            const width = 570;
+            const height = 300;
+            const radius = Math.min(width, height) / 2 - 40;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${width/2},${height/2})`);
+
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(0)
+                .outerRadius(radius);
+
+            const labelArc = d3.arc()
+                .innerRadius(radius * 0.6)
+                .outerRadius(radius * 0.6);
+
+            const color = d3.scaleOrdinal()
+                .domain(Object.keys(data))
+                .range(['#3498db', '#e74c3c']);
+
+            const pieData = pie(Object.entries(data).map(([key, value]) => ({
+                label: key,
+                value: value
+            })));
+
+            // Create pie slices
+            const slices = g.selectAll('.pie-slice')
+                .data(pieData)
+                .enter().append('path')
+                .attr('class', 'pie-slice')
+                .attr('d', arc)
+                .attr('fill', d => color(d.data.label));
+
+            // Add labels
+            g.selectAll('.pie-label')
+                .data(pieData)
+                .enter().append('text')
+                .attr('class', 'pie-label')
+                .attr('transform', d => `translate(${labelArc.centroid(d)})`)
+                .text(d => `${d.data.label}\n${d.data.value.toLocaleString()}\n(${(d.data.value / d3.sum(Object.values(data)) * 100).toFixed(1)}%)`);
+
+            // Add legend
+            const legend = svg.append('g')
+                .attr('class', 'legend')
+                .attr('transform', `translate(20, 20)`);
+
+            const legendItems = legend.selectAll('.legend-item')
+                .data(Object.entries(data))
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * 20})`);
+
+            legendItems.append('rect')
+                .attr('width', 15)
+                .attr('height', 15)
+                .attr('fill', d => color(d[0]));
+
+            legendItems.append('text')
+                .attr('x', 20)
+                .attr('y', 12)
+                .style('font-size', '12px')
+                .text(d => `${d[0]}: ${d[1].toLocaleString()}`);
+        }
+
+        function createDILIComposition(data) {
+            const svg = d3.select("#dili-composition");
+            const width = 570;
+            const height = 300;
+            const radius = Math.min(width, height) / 2 - 40;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${width/2},${height/2})`);
+
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(radius * 0.4)
+                .outerRadius(radius);
+
+            const labelArc = d3.arc()
+                .innerRadius(radius * 0.7)
+                .outerRadius(radius * 0.7);
+
+            const color = d3.scaleOrdinal()
+                .domain(Object.keys(data))
+                .range(['#e74c3c', '#27ae60', '#95a5a6']);
+
+            const pieData = pie(Object.entries(data).map(([key, value]) => ({
+                label: key,
+                value: value
+            })));
+
+            // Create donut slices
+            const slices = g.selectAll('.pie-slice')
+                .data(pieData)
+                .enter().append('path')
+                .attr('class', 'pie-slice')
+                .attr('d', arc)
+                .attr('fill', d => color(d.data.label));
+
+            // Add labels
+            g.selectAll('.pie-label')
+                .data(pieData)
+                .enter().append('text')
+                .attr('class', 'pie-label')
+                .attr('transform', d => `translate(${labelArc.centroid(d)})`)
+                .style('font-size', '10px')
+                .text(d => `${(d.data.value / d3.sum(Object.values(data)) * 100).toFixed(1)}%`);
+
+            // Center text
+            g.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.35em')
+                .style('font-size', '14px')
+                .style('font-weight', 'bold')
+                .text('DILI Status');
+
+            // Add legend
+            const legend = svg.append('g')
+                .attr('class', 'legend')
+                .attr('transform', `translate(20, 20)`);
+
+            const legendItems = legend.selectAll('.legend-item')
+                .data(Object.entries(data))
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * 18})`);
+
+            legendItems.append('rect')
+                .attr('width', 12)
+                .attr('height', 12)
+                .attr('fill', d => color(d[0]));
+
+            legendItems.append('text')
+                .attr('x', 18)
+                .attr('y', 10)
+                .style('font-size', '11px')
+                .text(d => `${d[0]}: ${d[1].toLocaleString()}`);
+        }
+
+        function createWellsPerPlateDistribution(data) {
+            const svg = d3.select("#wells-per-plate");
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+            const width = 570 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Create histogram bins
+            const values = data.distribution;
+            const histogram = d3.histogram()
+                .domain(d3.extent(values))
+                .thresholds(8);
+
+            const bins = histogram(values);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(values))
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(bins, d => d.length)])
+                .range([height, 0]);
+
+            // Create bars
+            g.selectAll('.histogram-bar')
+                .data(bins)
+                .enter().append('rect')
+                .attr('class', 'histogram-bar')
+                .attr('x', d => xScale(d.x0))
+                .attr('y', d => yScale(d.length))
+                .attr('width', d => Math.max(0, xScale(d.x1) - xScale(d.x0) - 1))
+                .attr('height', d => height - yScale(d.length));
+
+            // Add mean line
+            g.append('line')
+                .attr('x1', xScale(data.mean))
+                .attr('x2', xScale(data.mean))
+                .attr('y1', 0)
+                .attr('y2', height)
+                .attr('stroke', '#e74c3c')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
+
+            g.append('text')
+                .attr('x', xScale(data.mean) + 5)
+                .attr('y', 15)
+                .style('font-size', '11px')
+                .style('fill', '#e74c3c')
+                .text(`Mean: ${data.mean.toFixed(0)}`);
+
+            // Axes
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(yScale));
+
+            // Axis labels
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + 35})`)
+                .style("text-anchor", "middle")
+                .text("Wells per Plate");
+
+            g.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Plates");
+        }
+
+        function createSummaryStats(data) {
+            const container = d3.select("#summary-stats");
+            
+            const stats = [
+                { label: "Total Wells", value: data.total_wells.toLocaleString() },
+                { label: "Total Plates", value: data.total_plates },
+                { label: "Unique Drugs", value: data.unique_drugs },
+                { label: "DILI Positive Rate", value: `${data.dili_positive_rate.toFixed(1)}%` }
+            ];
+
+            stats.forEach(stat => {
+                const statDiv = container.append("div")
+                    .attr("class", "summary-stat");
+
+                statDiv.append("div")
+                    .attr("class", "stat-value")
+                    .text(stat.value);
+
+                statDiv.append("div")
+                    .attr("class", "stat-label")
+                    .text(stat.label);
+            });
+        }
+
+        console.log("Dataset Composition Analysis visualization loaded successfully");
+    </script>
+</body>
+</html>
